@@ -11,7 +11,7 @@ from datetime import datetime
 
 from pydantic import Field
 
-from src.core.constants import REMNASHOP_TAG
+from src.core.constants import REMNASHOP_PREFIX
 from src.core.enums import Locale, UserRole
 from src.core.utils.time import datetime_now
 
@@ -39,7 +39,7 @@ class BaseUserDto(TrackableDto):
 
     @property
     def remna_name(self) -> str:
-        return f"{REMNASHOP_TAG}{self.telegram_id}"
+        return f"{REMNASHOP_PREFIX}{self.telegram_id}"
 
     @property
     def remna_description(self) -> str:

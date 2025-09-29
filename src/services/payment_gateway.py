@@ -242,7 +242,7 @@ class PaymentGatewayService(BaseService):
         transaction = await self.transaction_service.get(payment_id)
 
         if not transaction or not transaction.user:
-            logger.critical("")
+            logger.critical(f"Transaction or user not found for {payment_id}")
             return
 
         logger.info(f"Payment canceled '{payment_id}' from '{transaction.user.telegram_id}'")

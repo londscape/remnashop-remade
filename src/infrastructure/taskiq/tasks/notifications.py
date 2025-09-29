@@ -1,13 +1,18 @@
+import asyncio
 from typing import Any
 
 from aiogram.types import BufferedInputFile
 from dishka import FromDishka
 from dishka.integrations.taskiq import inject
 
+from src.core.constants import BATCH_DELAY, BATCH_SIZE
 from src.core.enums import MediaType, SystemNotificationType
+from src.core.utils.iterables import chunked
 from src.core.utils.message_payload import MessagePayload
+from src.infrastructure.database.models.dto.user import UserDto
 from src.infrastructure.taskiq.broker import broker
 from src.services.notification import NotificationService
+from src.services.user import UserService
 
 
 @broker.task
@@ -60,3 +65,37 @@ async def send_error_notification_task(
             add_close_button=True,
         ),
     )
+
+
+@broker.task
+@inject
+async def send_access_denied_notifications_task(
+    user: UserDto,
+    i18n_key: str,
+    notification_service: FromDishka[NotificationService],
+) -> None:
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(i18n_key=i18n_key),
+    )
+
+
+@broker.task
+@inject
+async def send_access_opened_notifications_task(
+    waiting_user_ids: list[int],
+    user_service: FromDishka[UserService],
+    notification_service: FromDishka[NotificationService],
+) -> None:
+    for batch in chunked(waiting_user_ids, BATCH_SIZE):
+        for user_telegram_id in batch:
+            user = await user_service.get(user_telegram_id)
+            await notification_service.notify_user(
+                user=user,
+                payload=MessagePayload(
+                    i18n_key="ntf-access-allowed",
+                    auto_delete_after=None,
+                    add_close_button=True,
+                ),
+            )
+        await asyncio.sleep(BATCH_DELAY)

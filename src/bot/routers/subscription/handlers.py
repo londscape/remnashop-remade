@@ -6,7 +6,7 @@ from dishka.integrations.aiogram_dialog import inject
 from loguru import logger
 
 from src.bot.states import Subscription
-from src.core.constants import USER_KEY
+from src.core.constants import PURCHASE_PREFIX, USER_KEY
 from src.core.enums import PaymentGatewayType, PurchaseType
 from src.core.utils.adapter import DialogDataAdapter
 from src.core.utils.message_payload import MessagePayload
@@ -29,7 +29,10 @@ async def on_subscription_plans(
     plans: list[PlanDto] = await plan_service.get_available_plans(user)
     gateways = await payment_gateway_service.filter_active()
 
-    purchase_type = PurchaseType(callback.data or PurchaseType.NEW)
+    if not callback.data:
+        return
+
+    purchase_type = PurchaseType(callback.data.removeprefix(PURCHASE_PREFIX))
     dialog_manager.dialog_data["purchase_type"] = purchase_type
 
     if not plans:

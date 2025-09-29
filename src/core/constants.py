@@ -14,7 +14,8 @@ BOT_WEBHOOK_PATH: Final[str] = "/telegram"
 PAYMENTS_WEBHOOK_PATH: Final[str] = "/payments"
 
 TIMEZONE: Final[timezone] = timezone.utc
-REMNASHOP_TAG: Final[str] = "rs_"
+REMNASHOP_PREFIX: Final[str] = "rs_"
+PURCHASE_PREFIX: Final[str] = "purchase_"
 
 CONTAINER_KEY: Final[str] = "dishka_container"
 CONFIG_KEY: Final[str] = "config"
@@ -27,3 +28,6 @@ TIME_10M: Final[int] = TIME_1M * 10
 # TODO: Check with a large number of users
 RECENT_REGISTERED_MAX_COUNT: Final[int] = 10
 RECENT_ACTIVITY_MAX_COUNT: Final[int] = 10
+
+BATCH_SIZE: Final[int] = 20
+BATCH_DELAY: Final[int] = 1

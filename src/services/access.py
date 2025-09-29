@@ -1,11 +1,16 @@
-from aiogram.types import TelegramObject
+from aiogram.types import CallbackQuery, TelegramObject
 from aiogram_dialog.utils import remove_intent_id
 from loguru import logger
 
+from src.core.constants import PURCHASE_PREFIX
 from src.core.enums import AccessMode
 from src.core.storage.keys import AccessModeKey, AccessWaitListKey
 from src.core.utils.formatters import format_log_user
 from src.infrastructure.database.models.dto import UserDto
+from src.infrastructure.taskiq.tasks.notifications import (
+    send_access_denied_notifications_task,
+    send_access_opened_notifications_task,
+)
 
 from .base import BaseService
 
@@ -28,11 +33,22 @@ class AccessService(BaseService):
         match mode:
             case AccessMode.BLOCKED:
                 logger.info(f"{format_log_user(user)} Access denied (mode: blocked)")
+
+                await send_access_denied_notifications_task.kiq(
+                    user=user,
+                    i18n_key="ntf-access-denied",
+                )
+
                 return False
 
-            case AccessMode.PURCHASE:  # TODO: Notify ntf-access-denied-purchase
+            case AccessMode.PURCHASE:
                 if self._is_purchase_action(event):
                     logger.info(f"{format_log_user(user)} Access denied (mode: no purchases)")
+
+                    await send_access_denied_notifications_task.kiq(
+                        user=user,
+                        i18n_key="ntf-access-denied-purchase",
+                    )
 
                     if await self._can_add_to_waitlist(user.telegram_id):
                         await self.add_user_to_waitlist(user.telegram_id)
@@ -69,6 +85,15 @@ class AccessService(BaseService):
 
     async def set_mode(self, mode: AccessMode) -> None:
         await self.redis_repository.set(key=AccessModeKey(), value=mode)
+        logger.debug(f"Access mode changed to '{mode}'")
+
+        if mode in (AccessMode.ALL, AccessMode.INVITED):
+            waiting_users = await self.get_all_waiting_users()
+            if waiting_users:
+                logger.info(f"Notifying {len(waiting_users)} waiting users about access opening")
+                await send_access_opened_notifications_task.kiq(waiting_users)
+
+        await self.clear_all_waiting_users()
 
     async def add_user_to_waitlist(self, telegram_id: int) -> bool:
         added_count = await self.redis_repository.collection_add(AccessWaitListKey(), telegram_id)
@@ -116,6 +141,13 @@ class AccessService(BaseService):
         return True
 
     def _is_purchase_action(self, event: TelegramObject) -> bool:
-        # TODO: Find purchase action
-        # callback_data = remove_intent_id(event.data)
-        return False  # Placeholder
+        if not isinstance(event, CallbackQuery) or not event.data:
+            return False
+
+        callback_data = remove_intent_id(event.data)
+
+        if callback_data[-1].startswith(PURCHASE_PREFIX):
+            logger.debug(f"Detected purchase action: {callback_data}")
+            return True
+
+        return False

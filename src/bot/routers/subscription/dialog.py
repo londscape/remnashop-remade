@@ -5,6 +5,7 @@ from magic_filter import F
 
 from src.bot.states import Connect, MainMenu, Subscription
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
+from src.core.constants import PURCHASE_PREFIX
 from src.core.enums import BannerName, PaymentGatewayType, PurchaseType
 
 from .getters import (
@@ -29,19 +30,19 @@ subscription = Window(
     Row(
         Button(
             text=I18nFormat("btn-subscription-new"),
-            id=PurchaseType.NEW,
+            id=f"{PURCHASE_PREFIX}{PurchaseType.NEW}",
             on_click=on_subscription_plans,
             when=~F["has_active_subscription"],
         ),
         Button(
             text=I18nFormat("btn-subscription-renew"),
-            id=PurchaseType.RENEW,
+            id=f"{PURCHASE_PREFIX}{PurchaseType.RENEW}",
             on_click=on_subscription_plans,
             when=F["has_active_subscription"],
         ),
         Button(
             text=I18nFormat("btn-subscription-change"),
-            id=PurchaseType.CHANGE,
+            id=f"{PURCHASE_PREFIX}{PurchaseType.CHANGE}",
             on_click=on_subscription_plans,
             when=F["has_active_subscription"],
         ),
@@ -49,7 +50,7 @@ subscription = Window(
     Row(
         SwitchTo(
             text=I18nFormat("btn-subscription-promocode"),
-            id="promocode",
+            id=f"{PURCHASE_PREFIX}promocode",
             state=Subscription.PROMOCODE,
         ),
     ),
@@ -72,7 +73,7 @@ plans = Window(
     Column(
         Select(
             text=I18nFormat("btn-subscription-plan", name=F["item"]["name"]),
-            id="select_plan",
+            id=f"{PURCHASE_PREFIX}select_plan",
             item_id_getter=lambda item: item["id"],
             items="plans",
             type_factory=int,
@@ -82,7 +83,7 @@ plans = Window(
     Row(
         SwitchTo(
             text=I18nFormat("btn-back"),
-            id="back",
+            id=f"{PURCHASE_PREFIX}back",
             state=Subscription.MAIN,
         ),
     ),
@@ -109,7 +110,7 @@ duration = Window(
                 price=F["item"]["price"],
                 currency=F["item"]["currency"],
             ),
-            id="select_duration",
+            id=f"{PURCHASE_PREFIX}select_duration",
             item_id_getter=lambda item: item["days"],
             items="durations",
             type_factory=int,
@@ -120,13 +121,13 @@ duration = Window(
     Row(
         SwitchTo(
             text=I18nFormat("btn-subscription-back-plans"),
-            id="back_plans",
+            id=f"{PURCHASE_PREFIX}back_plans",
             state=Subscription.PLANS,
             when=~F["only_single_plan"],
         ),
         SwitchTo(
             text=I18nFormat("btn-back"),
-            id="back_main",
+            id=f"{PURCHASE_PREFIX}back_main",
             state=Subscription.MAIN,
             when=(F["only_single_plan"]) | (F["purchase_type"] == PurchaseType.RENEW),
         ),
@@ -154,7 +155,7 @@ payment_method = Window(
                 price=F["item"]["price"],
                 currency=F["item"]["currency"],
             ),
-            id="select_payment_method",
+            id=f"{PURCHASE_PREFIX}select_payment_method",
             item_id_getter=lambda item: item["gateway_type"],
             items="payment_methods",
             type_factory=PaymentGatewayType,
@@ -164,7 +165,7 @@ payment_method = Window(
     Row(
         SwitchTo(
             text=I18nFormat("btn-subscription-back-duration"),
-            id="back",
+            id=f"{PURCHASE_PREFIX}back",
             state=Subscription.DURATION,
         ),
     ),
@@ -191,7 +192,7 @@ confirm = Window(
         ),
         Button(
             text=I18nFormat("btn-subscription-get"),
-            id="get",
+            id=f"{PURCHASE_PREFIX}get",
             on_click=on_get_subscription,
             when=~F["url"],
         ),
@@ -199,13 +200,13 @@ confirm = Window(
     Row(
         SwitchTo(
             text=I18nFormat("btn-subscription-back-payment-method"),
-            id="back_payment_method",
+            id=f"{PURCHASE_PREFIX}back_payment_method",
             state=Subscription.PAYMENT_METHOD,
             when=~F["only_single_gateway"],
         ),
         SwitchTo(
             text=I18nFormat("btn-subscription-back-duration"),
-            id="back_duration",
+            id=f"{PURCHASE_PREFIX}back_duration",
             state=Subscription.DURATION,
             when=F["only_single_gateway"],
         ),

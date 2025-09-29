@@ -6,6 +6,7 @@ from src.bot.routers.dashboard.users.handlers import on_user_search
 from src.bot.routers.extra.test import show_dev_popup
 from src.bot.states import Dashboard, MainMenu, Subscription
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
+from src.core.constants import PURCHASE_PREFIX
 from src.core.enums import BannerName
 
 from .getters import menu_getter
@@ -34,7 +35,7 @@ menu = Window(
         # ),
         Start(
             text=I18nFormat("btn-menu-subscription"),
-            id="subscription",
+            id=f"{PURCHASE_PREFIX}subscription",
             state=Subscription.MAIN,
         ),
     ),

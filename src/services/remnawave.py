@@ -2,7 +2,6 @@ from uuid import UUID
 
 from aiogram import Bot
 from fluentogram import TranslatorHub
-from loguru import logger
 from redis.asyncio import Redis
 from remnawave import RemnawaveSDK
 from remnawave.models import CreateUserRequestDto, UpdateUserRequestDto, UserResponseDto
@@ -50,8 +49,8 @@ class RemnawaveService(BaseService):
         )
 
         if not isinstance(created_user, UserResponseDto):
-            logger.critical("")
             raise ValueError
+
         return created_user
 
     async def updated_user(
@@ -76,6 +75,6 @@ class RemnawaveService(BaseService):
         )
 
         if not isinstance(created_user, UserResponseDto):
-            logger.critical("")
             raise ValueError
+
         return created_user
