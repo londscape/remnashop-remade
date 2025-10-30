@@ -12,6 +12,7 @@ from src.core.logger import LOG_FILENAME
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.core.utils.time import datetime_now
+from src.core.utils.validators import is_double_click
 from src.infrastructure.database.models.dto import UserDto
 from src.infrastructure.taskiq.tasks.redirects import redirect_to_main_menu_task
 from src.services.notification import NotificationService
@@ -25,7 +26,7 @@ async def on_logs_request(
     dialog_manager: DialogManager,
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
 
     try:
         file = FSInputFile(
@@ -72,6 +73,7 @@ async def on_user_role_remove(
     widget: Button,
     sub_manager: SubManager,
     user_service: FromDishka[UserService],
+    notification_service: FromDishka[NotificationService],
 ) -> None:
     await sub_manager.load_data()
     user: UserDto = sub_manager.middleware_data[USER_KEY]
@@ -81,6 +83,18 @@ async def on_user_role_remove(
     if not target_user:
         raise ValueError(f"Attempted to remove role for non-existent user '{target_telegram_id}'")
 
-    await user_service.set_role(user=target_user, role=UserRole.USER)
-    await redirect_to_main_menu_task.kiq(target_user)
-    logger.info(f"{log(user)} Changed role for {log(target_user)} to '{UserRole.USER}'")
+    if is_double_click(
+        sub_manager.manager,
+        key=f"role_confirm_{target_telegram_id}",
+        cooldown=10,
+    ):
+        await user_service.set_role(user=target_user, role=UserRole.USER)
+        await redirect_to_main_menu_task.kiq(target_user)
+        logger.info(f"{log(user)} Changed role for {log(target_user)} to '{UserRole.USER}'")
+        return
+
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(i18n_key="ntf-double-click-confirm"),
+    )
+    logger.debug(f"{log(user)} Waiting for confirmation to delete user role '{target_telegram_id}'")

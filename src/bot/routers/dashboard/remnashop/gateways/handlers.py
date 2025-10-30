@@ -120,7 +120,7 @@ async def on_field_select(
     dialog_manager: DialogManager,
     selected_field: str,
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     dialog_manager.dialog_data["selected_field"] = selected_field
     logger.info(f"{log(user)} Selected field '{selected_field}' for editing")
     await dialog_manager.switch_to(state=RemnashopGateways.FIELD)
@@ -135,7 +135,7 @@ async def on_field_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     gateway_id = dialog_manager.dialog_data["gateway_id"]
     selected_field = dialog_manager.dialog_data["selected_field"]
 
@@ -172,6 +172,6 @@ async def on_default_currency_select(
     selected_currency: Currency,
     settings_service: FromDishka[SettingsService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Set default currency '{selected_currency}'")
     await settings_service.set_default_currency(selected_currency)

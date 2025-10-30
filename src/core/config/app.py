@@ -4,8 +4,8 @@ from typing import Self
 from pydantic import Field, SecretStr, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
 
-from src.core.constants import DOMAIN_REGEX
-from src.core.enums import Locale
+from src.core.constants import API_V1, DOMAIN_REGEX, PAYMENTS_WEBHOOK_PATH
+from src.core.enums import Locale, PaymentGatewayType
 from src.core.utils.types import LocaleList, StringList
 
 from .base import BaseConfig
@@ -31,6 +31,11 @@ class AppConfig(BaseConfig, env_prefix="APP_"):
     remnawave: RemnawaveConfig = Field(default_factory=RemnawaveConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
+
+    def get_webhook(self, gateway_type: PaymentGatewayType) -> str:
+        domain = f"https://{self.domain.get_secret_value()}"
+        path = f"{API_V1 + PAYMENTS_WEBHOOK_PATH}/{gateway_type.lower()}"
+        return domain + path
 
     @classmethod
     def get(cls) -> Self:

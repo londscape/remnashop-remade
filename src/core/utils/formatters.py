@@ -10,6 +10,7 @@ from calendar import monthrange
 from datetime import datetime, timedelta
 from decimal import ROUND_HALF_UP, ROUND_UP, Decimal
 from re import Match
+from urllib.parse import quote
 
 from src.core.i18n.keys import ByteUnitKey, TimeUnitKey, UtilKey
 from src.core.utils.time import datetime_now
@@ -19,6 +20,12 @@ from src.infrastructure.database.models.dto.user import BaseUserDto
 # For only user action
 def format_user_log(user: Union[BaseUserDto, UserDto]) -> str:
     return f"[{user.role.upper()}:{user.telegram_id} ({user.name})]"
+
+
+def format_username_to_url(username: str, text: Optional[str]) -> str:
+    clean_username = username.lstrip("@")
+    encoded_text = quote(text or "")
+    return f"https://t.me/{clean_username}?text={encoded_text}"
 
 
 def format_days_to_datetime(value: int, year: int = 2099) -> datetime:

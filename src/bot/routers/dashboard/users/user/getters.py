@@ -18,6 +18,7 @@ from src.core.utils.formatters import (
     i18n_format_traffic_limit,
 )
 from src.infrastructure.database.models.dto import UserDto
+from src.services.plan import PlanService
 from src.services.remnawave import RemnawaveService
 from src.services.subscription import SubscriptionService
 from src.services.transaction import TransactionService
@@ -33,6 +34,7 @@ async def user_getter(
     subscription_service: FromDishka[SubscriptionService],
     **kwargs: Any,
 ) -> dict[str, Any]:
+    dialog_manager.dialog_data.pop("payload", None)
     start_data = cast(dict[str, Any], dialog_manager.start_data)
     target_telegram_id = start_data["target_telegram_id"]
     dialog_manager.dialog_data["target_telegram_id"] = target_telegram_id
@@ -128,7 +130,7 @@ async def subscription_getter(
             if remna_user.traffic_limit_bytes and remna_user.traffic_limit_bytes > 0
             else i18n_format_traffic_limit(-1)
         ),
-        "device_limit": subscription.device_limit,
+        "device_limit": i18n_format_device_limit(subscription.device_limit),
         "expire_time": i18n_format_expire_time(subscription.expire_at),
         #
         "squads": squads,
@@ -254,6 +256,39 @@ async def squads_getter(
 
 
 @inject
+async def expire_time_getter(
+    dialog_manager: DialogManager,
+    user_service: FromDishka[UserService],
+    subscription_service: FromDishka[SubscriptionService],
+    **kwargs: Any,
+) -> dict[str, Any]:
+    target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
+    target_user = await user_service.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        raise ValueError(f"User '{target_telegram_id}' not found")
+
+    subscription = await subscription_service.get_current(target_telegram_id)
+
+    if not subscription:
+        raise ValueError(f"Current subscription for user '{target_telegram_id}' not found")
+
+    formatted_durations = [
+        {
+            "operation": "ADD" if value > 0 else "SUB",
+            "duration": i18n_format_days(value) if value > 0 else i18n_format_days(-value),
+            "days": value,
+        }
+        for value in [1, -1, 3, -3, 7, -7, 14, -14, 30, -30]
+    ]
+
+    return {
+        "expire_time": i18n_format_expire_time(subscription.expire_at),
+        "durations": formatted_durations,
+    }
+
+
+@inject
 async def transactions_getter(
     dialog_manager: DialogManager,
     transaction_service: FromDishka[TransactionService],
@@ -308,6 +343,36 @@ async def transaction_getter(
         "plan_device_limit": i18n_format_device_limit(transaction.plan.device_limit),
         "plan_duration": i18n_format_days(transaction.plan.duration),
     }
+
+
+@inject
+async def give_access_getter(
+    dialog_manager: DialogManager,
+    user_service: FromDishka[UserService],
+    plan_service: FromDishka[PlanService],
+    **kwargs: Any,
+) -> dict[str, Any]:
+    target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
+    target_user = await user_service.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        raise ValueError(f"User '{target_telegram_id}' not found")
+
+    plans = await plan_service.get_allowed_plans()
+
+    if not plans:
+        raise ValueError("Allowed plans not found")
+
+    formatted_plans = [
+        {
+            "plan_name": plan.name,
+            "plan_id": plan.id,
+            "selected": True if target_telegram_id in plan.allowed_user_ids else False,
+        }
+        for plan in plans
+    ]
+
+    return {"plans": formatted_plans}
 
 
 @inject

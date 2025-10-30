@@ -4,6 +4,7 @@ from aiogram_dialog import DialogManager
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
+from src.core.config.app import AppConfig
 from src.core.enums import Currency
 from src.infrastructure.database.models.dto import PaymentGatewayDto
 from src.services.payment_gateway import PaymentGatewayService
@@ -35,6 +36,7 @@ async def gateways_getter(
 @inject
 async def gateway_getter(
     dialog_manager: DialogManager,
+    config: AppConfig,
     payment_gateway_service: FromDishka[PaymentGatewayService],
     **kwargs: Any,
 ) -> dict[str, Any]:
@@ -53,6 +55,7 @@ async def gateway_getter(
         "is_active": gateway.is_active,
         "settings": gateway.settings.get_settings_as_list_data,
         "url": "t.me/remna_shop",
+        "webhook": config.get_webhook(gateway.type),
     }
 
 

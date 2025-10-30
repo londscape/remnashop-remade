@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Union
 from uuid import UUID
 
@@ -7,17 +8,24 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
+from fluentogram import TranslatorRunner
 from loguru import logger
 from remnawave import RemnawaveSDK
 
+from src.bot.keyboards import get_contact_support_keyboard
+from src.bot.routers.dashboard.broadcast.handlers import _update_payload
 from src.bot.states import DashboardUser
+from src.core.config.app import AppConfig
 from src.core.constants import USER_KEY
 from src.core.enums import SubscriptionStatus, UserRole
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
+from src.core.utils.time import datetime_now
+from src.core.utils.validators import is_double_click, parse_int
 from src.infrastructure.database.models.dto import UserDto
 from src.infrastructure.taskiq.tasks.redirects import redirect_to_main_menu_task
 from src.services.notification import NotificationService
+from src.services.plan import PlanService
 from src.services.remnawave import RemnawaveService
 from src.services.subscription import SubscriptionService
 from src.services.transaction import TransactionService
@@ -42,7 +50,7 @@ async def on_block_toggle(
     dialog_manager: DialogManager,
     user_service: FromDishka[UserService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -63,7 +71,7 @@ async def on_role_select(
     selected_role: UserRole,
     user_service: FromDishka[UserService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -83,7 +91,7 @@ async def on_current_subscription(
     subscription_service: FromDishka[SubscriptionService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     subscription = await subscription_service.get_current(target_telegram_id)
 
@@ -105,7 +113,7 @@ async def on_active_toggle(
     subscription_service: FromDishka[SubscriptionService],
     remnawave: FromDishka[RemnawaveSDK],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     subscription = await subscription_service.get_current(target_telegram_id)
 
@@ -136,8 +144,9 @@ async def on_subscription_delete(
     user_service: FromDishka[UserService],
     subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
+    notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -149,12 +158,23 @@ async def on_subscription_delete(
     if not subscription:
         raise ValueError(f"Current subscription for user '{target_telegram_id}' not found")
 
-    subscription.status = SubscriptionStatus.DELETED
-    await subscription_service.update(subscription)
-    await user_service.delete_current_subscription(target_telegram_id)
-    await remnawave_service.delete_user(target_user)
-    logger.info(f"{log(user)} Deleted subscription for user '{target_telegram_id}'")
-    await dialog_manager.switch_to(state=DashboardUser.MAIN)
+    if is_double_click(dialog_manager, key="subscription_delete_confirm", cooldown=10):
+        subscription.status = SubscriptionStatus.DELETED
+        await subscription_service.update(subscription)
+        await user_service.delete_current_subscription(target_telegram_id)
+        await remnawave_service.delete_user(target_user)
+        logger.info(f"{log(user)} Deleted subscription for user '{target_telegram_id}'")
+        await dialog_manager.switch_to(state=DashboardUser.MAIN)
+        return
+
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(i18n_key="ntf-double-click-confirm"),
+    )
+    logger.debug(
+        f"{log(user)} Waiting for confirmation to delete "
+        f"subscription for user '{target_telegram_id}'"
+    )
 
 
 @inject
@@ -166,7 +186,7 @@ async def on_devices(
     remnawave_service: FromDishka[RemnawaveService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -220,7 +240,7 @@ async def on_reset_traffic(
     subscription_service: FromDishka[SubscriptionService],
     remnawave: FromDishka[RemnawaveSDK],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     subscription = await subscription_service.get_current(target_telegram_id)
 
@@ -239,7 +259,7 @@ async def on_discount_select(
     selected_discount: int,
     user_service: FromDishka[UserService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected discount '{selected_discount}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
@@ -262,7 +282,7 @@ async def on_discount_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -293,7 +313,7 @@ async def on_traffic_limit_select(
     subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected traffic '{selected_traffic}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
@@ -313,8 +333,6 @@ async def on_traffic_limit_select(
         user=target_user,
         uuid=subscription.user_remna_id,
         subscription=subscription,
-        not_update_expire_at=True,
-        reset_traffic=False,
     )
 
     logger.info(
@@ -334,7 +352,7 @@ async def on_traffic_limit_input(
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -362,8 +380,6 @@ async def on_traffic_limit_input(
         user=target_user,
         uuid=subscription.user_remna_id,
         subscription=subscription,
-        not_update_expire_at=True,
-        reset_traffic=False,
     )
 
     logger.info(f"{log(user)} Changed traffic limit to '{number}' for '{target_telegram_id}'")
@@ -380,7 +396,7 @@ async def on_device_limit_select(
     subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected device limit '{selected_device}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
@@ -400,8 +416,6 @@ async def on_device_limit_select(
         user=target_user,
         uuid=subscription.user_remna_id,
         subscription=subscription,
-        not_update_expire_at=True,
-        reset_traffic=False,
     )
 
     logger.info(
@@ -421,7 +435,7 @@ async def on_device_limit_input(
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -449,8 +463,6 @@ async def on_device_limit_input(
         user=target_user,
         uuid=subscription.user_remna_id,
         subscription=subscription,
-        not_update_expire_at=True,
-        reset_traffic=False,
     )
 
     logger.info(f"{log(user)} Changed device limit to '{number}' for '{target_telegram_id}'")
@@ -467,7 +479,7 @@ async def on_squad_select(
     subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -492,8 +504,6 @@ async def on_squad_select(
         user=target_user,
         uuid=subscription.user_remna_id,
         subscription=subscription,
-        not_update_expire_at=True,
-        reset_traffic=False,
     )
 
 
@@ -505,7 +515,7 @@ async def on_transactions(
     transaction_service: FromDishka[TransactionService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     transactions = await transaction_service.get_by_user(target_telegram_id)
 
@@ -525,7 +535,214 @@ async def on_transaction_select(
     dialog_manager: DialogManager,
     selected_transaction: UUID,
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected transaction '{selected_transaction}'")
     dialog_manager.dialog_data["selected_transaction"] = selected_transaction
     await dialog_manager.switch_to(state=DashboardUser.TRANSACTION)
+
+
+@inject
+async def on_give_access(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager,
+    plan_service: FromDishka[PlanService],
+    notification_service: FromDishka[NotificationService],
+) -> None:
+    user = dialog_manager.middleware_data[USER_KEY]
+    plans = await plan_service.get_allowed_plans()
+
+    if not plans:
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(i18n_key="ntf-user-allowed-plans-empty"),
+        )
+        return
+
+    await dialog_manager.switch_to(state=DashboardUser.GIVE_ACCESS)
+
+
+@inject
+async def on_plan_select(
+    callback: CallbackQuery,
+    widget: Select[int],
+    dialog_manager: DialogManager,
+    selected_plan_id: int,
+    plan_service: FromDishka[PlanService],
+) -> None:
+    user = dialog_manager.middleware_data[USER_KEY]
+    logger.info(f"{log(user)} Selected plan '{selected_plan_id}'")
+    target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
+    plan = await plan_service.get(selected_plan_id)
+
+    if not plan:
+        raise ValueError(f"Plan '{selected_plan_id}' not found")
+
+    if target_telegram_id not in plan.allowed_user_ids:
+        plan.allowed_user_ids.append(target_telegram_id)
+    else:
+        plan.allowed_user_ids.remove(target_telegram_id)
+
+    await plan_service.update(plan)
+    logger.info(
+        f"{log(user)} Given access to plan '{selected_plan_id}' for user '{target_telegram_id}'"
+    )
+
+
+@inject
+async def on_duration_select(
+    callback: CallbackQuery,
+    widget: Select[int],
+    dialog_manager: DialogManager,
+    selected_duration: int,
+    user_service: FromDishka[UserService],
+    subscription_service: FromDishka[SubscriptionService],
+    notification_service: FromDishka[NotificationService],
+    remnawave_service: FromDishka[RemnawaveService],
+) -> None:
+    user = dialog_manager.middleware_data[USER_KEY]
+    logger.info(f"{log(user)} Selected duration '{selected_duration}'")
+    target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
+    target_user = await user_service.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        raise ValueError(f"User '{target_telegram_id}' not found")
+
+    subscription = await subscription_service.get_current(target_telegram_id)
+
+    if not subscription:
+        raise ValueError(f"Current subscription for user '{target_telegram_id}' not found")
+
+    new_expire = subscription.expire_at + timedelta(days=selected_duration)
+
+    if new_expire < datetime_now():
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(
+                i18n_key="ntf-user-invalid-expire-time",
+                i18n_kwargs={"operation": "ADD" if selected_duration > 0 else "SUB"},
+            ),
+        )
+        return
+
+    subscription.expire_at = new_expire
+    await subscription_service.update(subscription)
+    await remnawave_service.updated_user(
+        user=target_user,
+        uuid=subscription.user_remna_id,
+        subscription=subscription,
+    )
+    logger.info(
+        f"{log(user)} {'Added' if selected_duration > 0 else 'Subtracted'} "
+        f"'{abs(selected_duration)}' days to subscription for '{target_telegram_id}'"
+    )
+
+
+@inject
+async def on_duration_input(
+    message: Message,
+    widget: MessageInput,
+    dialog_manager: DialogManager,
+    user_service: FromDishka[UserService],
+    subscription_service: FromDishka[SubscriptionService],
+    notification_service: FromDishka[NotificationService],
+    remnawave_service: FromDishka[RemnawaveService],
+) -> None:
+    dialog_manager.show_mode = ShowMode.EDIT
+    user = dialog_manager.middleware_data[USER_KEY]
+    target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
+    target_user = await user_service.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        raise ValueError(f"User '{target_telegram_id}' not found")
+
+    subscription = await subscription_service.get_current(target_telegram_id)
+
+    if not subscription:
+        raise ValueError(f"Current subscription for user '{target_telegram_id}' not found")
+
+    number = parse_int(message.text)
+
+    if number is None:
+        logger.warning(f"{log(user)} Invalid duration input: '{message.text}'")
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(i18n_key="ntf-user-invalid-number"),
+        )
+        return
+
+    new_expire = subscription.expire_at + timedelta(days=number)
+
+    if new_expire < datetime_now():
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(
+                i18n_key="ntf-user-invalid-expire-time",
+                i18n_kwargs={"operation": "ADD" if number > 0 else "SUB"},
+            ),
+        )
+        return
+
+    subscription.expire_at = new_expire
+    await subscription_service.update(subscription)
+    await remnawave_service.updated_user(
+        user=target_user,
+        uuid=subscription.user_remna_id,
+        subscription=subscription,
+    )
+    logger.info(
+        f"{log(user)} {'Added' if number > 0 else 'Subtracted'} "
+        f"'{abs(number)}' days to subscription for '{target_telegram_id}'"
+    )
+
+
+@inject
+async def on_send(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager,
+    config: FromDishka[AppConfig],
+    i18n: FromDishka[TranslatorRunner],
+    user_service: FromDishka[UserService],
+    notification_service: FromDishka[NotificationService],
+) -> None:
+    user = dialog_manager.middleware_data[USER_KEY]
+    target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
+    target_user = await user_service.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        raise ValueError(f"User '{target_telegram_id}' not found")
+
+    payload = dialog_manager.dialog_data.get("payload")
+
+    if not payload:
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(i18n_key="ntf-broadcast-empty-content"),
+        )
+        return
+
+    if is_double_click(dialog_manager, key="message_confirm", cooldown=5):
+        text = i18n.get("contact-support")
+        support_username = config.bot.support_username.get_secret_value()
+        payload["reply_markup"] = get_contact_support_keyboard(support_username, text)
+
+        message = await notification_service.notify_user(
+            user=target_user,
+            payload=MessagePayload(**payload),
+        )
+        await dialog_manager.switch_to(state=DashboardUser.MAIN)
+
+        if message:
+            i18n_key = "ntf-user-message-success"
+        else:
+            i18n_key = "ntf-user-message-not-sent"
+
+        await notification_service.notify_user(user=user, payload=MessagePayload(i18n_key=i18n_key))
+        return
+
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(i18n_key="ntf-double-click-confirm"),
+    )
+    logger.debug(f"{log(user)} Awaiting confirmation for message send")

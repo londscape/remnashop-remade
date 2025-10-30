@@ -69,7 +69,7 @@ async def on_get_trial(
     plan_service: FromDishka[PlanService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     plan = await plan_service.get_trial_plan()
 
     if not plan:

@@ -8,7 +8,6 @@ from loguru import logger
 from src.core.constants import USER_KEY
 from src.core.enums import SystemNotificationType, UserNotificationType
 from src.core.utils.formatters import format_user_log as log
-from src.infrastructure.database.models.dto import UserDto
 from src.services.settings import SettingsService
 
 
@@ -20,7 +19,7 @@ async def on_user_type_select(
     selected_type: UserNotificationType,
     settings_service: FromDishka[SettingsService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     new_value = await settings_service.toggle_notification(selected_type)
     logger.info(f"{log(user)} Change notification type: '{selected_type}' to '{new_value}'")
 
@@ -33,6 +32,6 @@ async def on_system_type_select(
     selected_type: SystemNotificationType,
     settings_service: FromDishka[SettingsService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     new_value = await settings_service.toggle_notification(selected_type)
     logger.info(f"{log(user)} Change notification type: '{selected_type}' to '{new_value}'")

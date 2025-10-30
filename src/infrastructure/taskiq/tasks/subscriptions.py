@@ -150,9 +150,7 @@ async def purchase_subscription_task(
             updated_user = await remnawave_service.updated_user(
                 user=user,
                 uuid=subscription.user_remna_id,
-                plan=plan,
-                current_expire_at=subscription.expire_at,
-                reset_traffic=False,
+                subscription=subscription,
             )
             subscription.expire_at = updated_user.expire_at  # type: ignore[assignment]
             subscription.plan = plan
@@ -167,9 +165,7 @@ async def purchase_subscription_task(
             await subscription_service.update(subscription)
 
             updated_user = await remnawave_service.updated_user(
-                user=user,
-                uuid=subscription.user_remna_id,
-                plan=plan,
+                user=user, uuid=subscription.user_remna_id, plan=plan, reset_traffic=True
             )
             new_subscription = SubscriptionDto(
                 user_remna_id=updated_user.uuid,
@@ -244,7 +240,7 @@ async def delete_current_subscription_task(
     subscription.status = SubscriptionStatus.DELETED
     await subscription_service.update(subscription)
     await user_service.delete_current_subscription(user.telegram_id)
-    # await remnawave_service.delete_user(user)  # TODO: Should I delete it?
+    # await remnawave_service.delete_user(user)  # NOTE: Should I delete it?
 
 
 @broker.task

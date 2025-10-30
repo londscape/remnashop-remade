@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 from uuid import UUID
@@ -17,7 +16,7 @@ from src.core.enums import Currency, PlanAvailability, PlanType
 from src.core.utils.adapter import DialogDataAdapter
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
-from src.core.utils.time import datetime_now
+from src.core.utils.validators import is_double_click
 from src.infrastructure.database.models.dto import PlanDto, PlanDurationDto, PlanPriceDto, UserDto
 from src.services.notification import NotificationService
 from src.services.plan import PlanService
@@ -58,27 +57,19 @@ async def on_plan_remove(
     user: UserDto = sub_manager.middleware_data[USER_KEY]
 
     plan_id = int(sub_manager.item_id)
-    key = f"delete_confirm_{plan_id}"
 
-    now = datetime_now()
-    last_click_str: Optional[str] = sub_manager.dialog_data.get(key)
+    if is_double_click(sub_manager.manager, key=f"delete_confirm_{plan_id}", cooldown=10):
+        await plan_service.delete(plan_id)
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(i18n_key="ntf-plan-deleted-success"),
+        )
+        logger.info(f"{log(user)} Deleted plan ID '{plan_id}'")
+        return
 
-    if last_click_str:
-        last_click = datetime.fromisoformat(last_click_str.replace("Z", "+00:00"))
-        if now - last_click < timedelta(seconds=10):
-            await plan_service.delete(plan_id)
-            await notification_service.notify_user(
-                user=user,
-                payload=MessagePayload(i18n_key="ntf-plan-deleted-success"),
-            )
-            sub_manager.dialog_data.pop(key, None)
-            logger.info(f"{log(user)} Deleted plan ID '{plan_id}'")
-            return
-
-    sub_manager.dialog_data[key] = now.isoformat()
     await notification_service.notify_user(
         user=user,
-        payload=MessagePayload(i18n_key="ntf-plan-confirm-delete"),
+        payload=MessagePayload(i18n_key="ntf-double-click-confirm"),
     )
     logger.debug(f"{log(user)} Clicked delete for plan ID '{plan_id}' (awaiting confirmation)")
 
@@ -92,7 +83,7 @@ async def on_name_input(
     plan_service: FromDishka[PlanService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set plan name")
 
     if message.text is None:
@@ -130,7 +121,7 @@ async def on_type_select(
     dialog_manager: DialogManager,
     selected_type: PlanType,
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Selected plan type '{selected_type}'")
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
@@ -161,7 +152,7 @@ async def on_availability_select(
     dialog_manager: DialogManager,
     selected_availability: PlanAvailability,
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
 
@@ -182,7 +173,7 @@ async def on_active_toggle(
     widget: Button,
     dialog_manager: DialogManager,
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
 
@@ -204,7 +195,7 @@ async def on_traffic_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set plan traffic limit")
 
     if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
@@ -237,7 +228,7 @@ async def on_devices_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set plan device limit")
 
     if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
@@ -312,7 +303,7 @@ async def on_duration_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to add new plan duration")
 
     if message.text is None or not (
@@ -364,7 +355,7 @@ async def on_currency_select(
     dialog_manager: DialogManager,
     selected_currency: Currency,
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected currency '{selected_currency}'")
     dialog_manager.dialog_data["selected_currency"] = selected_currency.value
     await dialog_manager.switch_to(state=RemnashopPlans.PRICE)
@@ -379,7 +370,7 @@ async def on_price_input(
     pricing_service: FromDishka[PricingService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set plan price")
 
     if message.text is None:
@@ -437,7 +428,7 @@ async def on_allowed_user_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set allowed id for plan")
 
     if message.text is None or not message.text.isdigit():
@@ -462,7 +453,7 @@ async def on_allowed_user_input(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-no-user-found"),
         )
-        return  # TODO: Allow adding non-existent users to the list?
+        return  # NOTE: Allow adding non-existent users to the list?
 
     if allowed_user.telegram_id in plan.allowed_user_ids:
         logger.warning(f"{log(user)} User '{allowed_user.telegram_id}' is already allowed for plan")
@@ -505,7 +496,7 @@ async def on_squad_select(
     dialog_manager: DialogManager,
     selected_squad: UUID,
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
 
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
@@ -531,7 +522,7 @@ async def on_confirm_plan(  # noqa: C901
     notification_service: FromDishka[NotificationService],
     plan_service: FromDishka[PlanService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
 
     logger.debug(f"{log(user)} Attempted to confirm plan")
 

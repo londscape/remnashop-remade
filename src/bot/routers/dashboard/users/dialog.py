@@ -1,6 +1,6 @@
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Button, Column, Row, ScrollingGroup, Select, Start, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Row, ScrollingGroup, Select, Start, SwitchTo
 from aiogram_dialog.widgets.text import Format
 from magic_filter import F
 
@@ -78,7 +78,7 @@ search = Window(
 recent_registered = Window(
     Banner(BannerName.DASHBOARD),
     I18nFormat("msg-users-recent-registered"),
-    Column(
+    ScrollingGroup(
         Select(
             text=Format("{item.telegram_id} ({item.name})"),
             id="user",
@@ -87,6 +87,10 @@ recent_registered = Window(
             type_factory=int,
             on_click=on_user_select,
         ),
+        id="scroll",
+        width=1,
+        height=7,
+        hide_on_single_page=True,
     ),
     Row(
         SwitchTo(
@@ -103,7 +107,7 @@ recent_registered = Window(
 recent_activity = Window(
     Banner(BannerName.DASHBOARD),
     I18nFormat("msg-users-recent-activity"),
-    Column(
+    ScrollingGroup(
         Select(
             text=Format("{item.telegram_id} ({item.name})"),
             id="user",
@@ -112,6 +116,10 @@ recent_activity = Window(
             type_factory=int,
             on_click=on_user_select,
         ),
+        id="scroll",
+        width=1,
+        height=7,
+        hide_on_single_page=True,
     ),
     Row(
         SwitchTo(
@@ -173,10 +181,10 @@ blacklist = Window(
         hide_on_single_page=True,
     ),
     Row(
-        SwitchTo(
+        Button(
             text=I18nFormat("btn-users-unblock-all"),
             id="unblock_all",
-            state=DashboardUsers.UNBLOCK_ALL,
+            on_click=on_unblock_all,
             when=F["blocked_users_exists"],
         ),
     ),
@@ -192,28 +200,6 @@ blacklist = Window(
     getter=blacklist_getter,
 )
 
-unblock_all = Window(
-    Banner(BannerName.DASHBOARD),
-    I18nFormat("msg-users-unblock-all"),
-    Row(
-        Button(
-            text=I18nFormat("btn-users-unblock-all-confirm"),
-            id="unblock_all_confirm",
-            on_click=on_unblock_all,
-        ),
-    ),
-    Row(
-        SwitchTo(
-            text=I18nFormat("btn-back"),
-            id="back",
-            state=DashboardUsers.BLACKLIST,
-        ),
-    ),
-    IgnoreUpdate(),
-    state=DashboardUsers.UNBLOCK_ALL,
-)
-
-
 router = Dialog(
     users,
     search,
@@ -221,5 +207,4 @@ router = Dialog(
     recent_activity,
     search_results,
     blacklist,
-    unblock_all,
 )

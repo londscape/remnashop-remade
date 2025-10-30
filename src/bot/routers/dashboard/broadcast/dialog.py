@@ -2,7 +2,16 @@ from uuid import UUID
 
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Button, Column, ListGroup, Row, Select, Start, SwitchTo
+from aiogram_dialog.widgets.kbd import (
+    Button,
+    Column,
+    ListGroup,
+    Row,
+    ScrollingGroup,
+    Select,
+    Start,
+    SwitchTo,
+)
 from magic_filter import F
 
 from src.bot.states import Dashboard, DashboardBroadcast
@@ -84,7 +93,7 @@ broadcast = Window(
 list = Window(
     Banner(BannerName.DASHBOARD),
     I18nFormat("msg-broadcast-list"),
-    Column(
+    ScrollingGroup(
         Select(
             text=I18nFormat(
                 "btn-broadcast",
@@ -97,6 +106,10 @@ list = Window(
             type_factory=UUID,
             on_click=on_broadcast_select,
         ),
+        id="scroll",
+        width=1,
+        height=7,
+        hide_on_single_page=True,
     ),
     Row(
         Start(

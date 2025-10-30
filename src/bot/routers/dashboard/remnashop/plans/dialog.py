@@ -15,7 +15,6 @@ from aiogram_dialog.widgets.kbd import (
 from aiogram_dialog.widgets.text import Format
 from magic_filter import F
 
-from src.bot.routers.extra.test import show_dev_popup
 from src.bot.states import DashboardRemnashop, RemnashopPlans
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, Currency, PlanAvailability, PlanType
@@ -55,13 +54,6 @@ plans = Window(
     Banner(BannerName.DASHBOARD),
     I18nFormat("msg-plans-main"),
     Row(
-        Button(
-            text=I18nFormat("btn-plans-statistics"),
-            id="statistics",
-            # state=RemnashopPlans.STATISTICS,
-            on_click=show_dev_popup,
-            when=F["plans"],
-        ),
         SwitchTo(
             I18nFormat("btn-plans-create"),
             id="create",

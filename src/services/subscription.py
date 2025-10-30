@@ -47,6 +47,8 @@ class SubscriptionService(BaseService):
             telegram_id=user.telegram_id,
             subscription_id=db_created_subscription.id,
         )
+        await self.uow.commit()
+
         logger.info(
             f"{self.tag} Created subscription '{db_created_subscription.id}' "
             f"for user '{user.telegram_id}'"
@@ -111,6 +113,8 @@ class SubscriptionService(BaseService):
             subscription_id=subscription.id,  # type: ignore[arg-type]
             **data,
         )
+
+        await self.uow.commit()
 
         if db_updated_subscription:
             if subscription.user:

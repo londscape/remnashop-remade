@@ -186,6 +186,15 @@ class PlanAvailability(UpperStrEnum):
     TRIAL = auto()
 
 
+class PaymentGatewayType(UpperStrEnum):
+    TELEGRAM_STARS = auto()
+    YOOKASSA = auto()
+    YOOMONEY = auto()
+    CRYPTOMUS = auto()
+    HELEKET = auto()
+    URLPAY = auto()
+
+
 class Currency(UpperStrEnum):
     USD = auto()
     XTR = auto()
@@ -204,14 +213,21 @@ class Currency(UpperStrEnum):
     def from_code(cls, code: str) -> "Currency":
         return cls(code)
 
+    @classmethod
+    def from_gateway_type(cls, gateway_type: PaymentGatewayType) -> "Currency":
+        mapping = {
+            PaymentGatewayType.TELEGRAM_STARS: cls.XTR,
+            PaymentGatewayType.YOOKASSA: cls.RUB,
+            PaymentGatewayType.YOOMONEY: cls.RUB,
+            PaymentGatewayType.URLPAY: cls.RUB,
+            PaymentGatewayType.CRYPTOMUS: cls.USD,
+            PaymentGatewayType.HELEKET: cls.USD,
+        }
 
-class PaymentGatewayType(UpperStrEnum):
-    TELEGRAM_STARS = auto()
-    YOOKASSA = auto()
-    YOOMONEY = auto()
-    CRYPTOMUS = auto()
-    HELEKET = auto()
-    URLPAY = auto()
+        try:
+            return mapping[gateway_type]
+        except KeyError:
+            raise ValueError(f"Unknown payment gateway type: '{gateway_type}'")
 
 
 class AccessMode(UpperStrEnum):

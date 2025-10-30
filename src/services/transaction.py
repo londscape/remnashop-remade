@@ -62,6 +62,11 @@ class TransactionService(BaseService):
         )
         return TransactionDto.from_model_list(db_transactions)
 
+    async def get_all(self) -> list[TransactionDto]:
+        db_transactions = await self.uow.repository.transactions.get_all()
+        logger.debug(f"{self.tag} Retrieved '{len(db_transactions)}' total transactions")
+        return TransactionDto.from_model_list(db_transactions)
+
     async def update(self, transaction: TransactionDto) -> Optional[TransactionDto]:
         db_updated_transaction = await self.uow.repository.transactions.update(
             payment_id=transaction.payment_id,

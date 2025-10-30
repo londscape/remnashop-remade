@@ -30,7 +30,6 @@ class PricingService(BaseService):
             f"'{currency}' for user '{user.telegram_id}'"
         )
 
-        # Если цена нулевая, сразу возвращаем без расчёта
         if price <= 0:
             logger.debug(f"{self.tag} Price is zero, returning without discount")
             return PriceDetailsDto(
@@ -39,11 +38,20 @@ class PricingService(BaseService):
             )
 
         discount_percent = min(user.purchase_discount or user.personal_discount or 0, 100)
-        discounted = price * (Decimal(100) - Decimal(discount_percent)) / Decimal(100)
 
+        if discount_percent >= 100:
+            logger.info(
+                f"{self.tag} 100% discount applied, price is free for user '{user.telegram_id}'"
+            )
+            return PriceDetailsDto(
+                original_amount=price,
+                discount_percent=100,
+                final_amount=Decimal(0),
+            )
+
+        discounted = price * (Decimal(100) - Decimal(discount_percent)) / Decimal(100)
         final_amount = self.apply_currency_rules(discounted, currency)
 
-        # Если скидка не влияет на цену
         if final_amount == price:
             discount_percent = 0
 

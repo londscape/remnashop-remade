@@ -17,7 +17,7 @@ from aiogram_dialog.widgets.kbd import (
 from aiogram_dialog.widgets.text import Format
 from magic_filter import F
 
-from src.bot.routers.extra.test import show_dev_popup
+from src.bot.routers.dashboard.broadcast.handlers import on_content_input, on_preview
 from src.bot.states import Dashboard, DashboardUser
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, SubscriptionStatus, UserRole
@@ -26,6 +26,8 @@ from .getters import (
     device_limit_getter,
     devices_getter,
     discount_getter,
+    expire_time_getter,
+    give_access_getter,
     role_getter,
     squads_getter,
     subscription_getter,
@@ -44,8 +46,13 @@ from .handlers import (
     on_devices,
     on_discount_input,
     on_discount_select,
+    on_duration_input,
+    on_duration_select,
+    on_give_access,
+    on_plan_select,
     on_reset_traffic,
     on_role_select,
+    on_send,
     on_squad_select,
     on_subscription_delete,
     on_traffic_limit_input,
@@ -75,9 +82,10 @@ user = Window(
             id="transactions",
             on_click=on_transactions,
         ),
-        Button(
+        SwitchTo(
             text=I18nFormat("btn-user-message"),
             id="message",
+            state=DashboardUser.MESSAGE,
         ),
     ),
     Row(
@@ -89,8 +97,7 @@ user = Window(
         Button(
             text=I18nFormat("btn-user-give-access"),
             id="give_access",
-            on_click=show_dev_popup,  # on_give_access
-            # TODO: Add the user to the access plan allowed users list
+            on_click=on_give_access,
         ),
     ),
     Row(
@@ -140,13 +147,11 @@ subscription = Window(
             text=I18nFormat("btn-user-subscription-traffic-reset"),
             id="reset",
             on_click=on_reset_traffic,
-            # when=F["has_traffic_limit"],
         ),
         Button(
             text=I18nFormat("btn-user-subscription-devices"),
             id="devices",
             on_click=on_devices,
-            # when=F["has_devices_limit"],
         ),
     ),
     Row(
@@ -253,14 +258,18 @@ expire_time = Window(
     I18nFormat("msg-user-subscription-expire-time"),
     Group(
         Select(
-            text=Format("{item[duration]}"),
+            text=I18nFormat(
+                "btn-user-subscription-duration",
+                operation=F["item"]["operation"],
+                duration=F["item"]["duration"],
+            ),
             id="duration_select",
             item_id_getter=lambda item: item["days"],
             items="durations",
             type_factory=int,
-            # on_click=on_duration_select,
+            on_click=on_duration_select,
         ),
-        width=3,
+        width=2,
     ),
     Row(
         SwitchTo(
@@ -269,10 +278,10 @@ expire_time = Window(
             state=DashboardUser.SUBSCRIPTION,
         ),
     ),
-    # MessageInput(func=on_duration_input),
+    MessageInput(func=on_duration_input),
     IgnoreUpdate(),
     state=DashboardUser.EXPIRE_TIME,
-    # getter=expire_time_getter,
+    getter=expire_time_getter,
 )
 
 squads = Window(
@@ -435,15 +444,74 @@ role = Window(
     getter=role_getter,
 )
 
+give_access = Window(
+    Banner(BannerName.DASHBOARD),
+    I18nFormat("msg-user-give-access"),
+    Select(
+        text=I18nFormat(
+            "btn-user-allowed-plan-select",
+            plan_name=F["item"]["plan_name"],
+            selected=F["item"]["selected"],
+        ),
+        id="plan_select",
+        item_id_getter=lambda item: item["plan_id"],
+        items="plans",
+        type_factory=int,
+        on_click=on_plan_select,
+    ),
+    Row(
+        SwitchTo(
+            text=I18nFormat("btn-back"),
+            id="back",
+            state=DashboardUser.MAIN,
+        ),
+    ),
+    IgnoreUpdate(),
+    state=DashboardUser.GIVE_ACCESS,
+    getter=give_access_getter,
+)
+
+message = Window(
+    Banner(BannerName.DASHBOARD),
+    I18nFormat("msg-user-message"),
+    Row(
+        Button(
+            I18nFormat("btn-user-message-preview"),
+            id="preview",
+            on_click=on_preview,
+        ),
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-user-message-confirm"),
+            id="confirm",
+            on_click=on_send,
+        ),
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back",
+            state=DashboardUser.MAIN,
+        ),
+    ),
+    MessageInput(func=on_content_input),
+    IgnoreUpdate(),
+    state=DashboardUser.MESSAGE,
+)
+
 router = Dialog(
     user,
     subscription,
     traffic_limit,
     device_limit,
     devices_list,
+    expire_time,
     squads,
     discount,
     transactions_list,
     transaction,
     role,
+    give_access,
+    message,
 )

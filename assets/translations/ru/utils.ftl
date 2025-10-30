@@ -6,16 +6,15 @@ msg-test = Сообщение
 development = В разработке
 test-payment = Тестовый платеж
 unlimited = ∞
-unknown = Неизвестно
-empty = —
+unknown = —
+# TODO: Special symbol for delete in translation empty = {" "}
 
 
-# Payment
+
+# Other
 # TODO: Implement new/renew/change
 payment-invoice-description = Подписка { $name } на { $duration }
-
-
-# Commands
+contact-support = Здравствуйте! Мне нужна помощь.
 cmd-start = Перезапустить бота
 cmd-help = Помощь
 
@@ -38,7 +37,10 @@ frg-user =
     <blockquote>
     • <b>ID</b>: <code>{ $user_id }</code>
     • <b>Имя</b>: { $user_name }
-    • <b>Скидка</b>: { $personal_discount }%
+    { $personal_discount ->
+    [0] { space }
+    *[HAS] • <b>Ваша скидка</b>: { $personal_discount }%
+    }
     </blockquote>
 
 frg-user-info =
@@ -92,7 +94,7 @@ frg-payment-info =
 
 frg-payment-amount = { $final_amount }{ $currency } { $discount_percent -> 
     [0] { space }
-    *[more] { space } <strike>{ $original_amount }{ $currency }</strike> ({ $discount_percent }%)
+    *[more] { space } <strike>{ $original_amount }{ $currency }</strike> (-{ $discount_percent }%)
     }
 
 frg-plan-snapshot =

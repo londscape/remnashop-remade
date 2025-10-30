@@ -16,6 +16,7 @@ from src.core.utils.formatters import (
 from src.infrastructure.database.models.dto import PlanDto, PriceDetailsDto, UserDto
 from src.services.payment_gateway import PaymentGatewayService
 from src.services.plan import PlanService
+from src.services.pricing import PricingService
 from src.services.settings import SettingsService
 from src.services.subscription import SubscriptionService
 
@@ -61,8 +62,10 @@ async def plans_getter(
 @inject
 async def duration_getter(
     dialog_manager: DialogManager,
+    user: UserDto,
     i18n: FromDishka[TranslatorRunner],
     settings_service: FromDishka[SettingsService],
+    pricing_service: FromDishka[PricingService],
     **kwargs: Any,
 ) -> dict[str, Any]:
     adapter = DialogDataAdapter(dialog_manager)
@@ -77,11 +80,14 @@ async def duration_getter(
 
     for duration in plan.durations:
         key, kw = i18n_format_days(duration.days)
+        price = pricing_service.calculate(user, duration.get_price(currency), currency)
         durations.append(
             {
                 "days": duration.days,
                 "period": i18n.get(key, **kw),
-                "price": duration.get_price(currency),
+                "final_amount": price.final_amount,
+                "discount_percent": price.discount_percent,
+                "original_amount": price.original_amount,
                 "currency": currency.symbol,
             }
         )

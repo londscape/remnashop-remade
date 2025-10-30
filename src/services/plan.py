@@ -17,6 +17,7 @@ from .base import BaseService
 
 # TODO: Implement logic for plan availability for specific gateways
 # TODO: Make plan sorting customizable for display
+# TODO: Implement general discount for plan
 class PlanService(BaseService):
     uow: UnitOfWork
 
@@ -150,6 +151,23 @@ class PlanService(BaseService):
             f"for user '{user_dto.telegram_id}'"
         )
         return PlanDto.from_model_list(db_filtered_plans)
+
+    async def get_allowed_plans(self) -> list[PlanDto]:
+        db_plans: list[Plan] = await self.uow.repository.plans.filter_by_availability(
+            availability=PlanAvailability.ALLOWED,
+        )
+
+        if db_plans:
+            logger.debug(
+                f"{self.tag} Retrieved '{len(db_plans)}' plans with "
+                f"availability '{PlanAvailability.ALLOWED}'"
+            )
+        else:
+            logger.debug(
+                f"{self.tag} No plans found with availability '{PlanAvailability.ALLOWED}'"
+            )
+
+        return PlanDto.from_model_list(db_plans)
 
     #
 

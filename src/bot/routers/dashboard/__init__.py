@@ -1,4 +1,4 @@
-from . import access, broadcast, dialog, promocodes, remnashop, remnawave, users
+from . import access, broadcast, dialog, promocodes, remnashop, remnawave, statistics, users
 
 __all__ = [
     "dialog",
@@ -7,5 +7,6 @@ __all__ = [
     "promocodes",
     "remnashop",
     "remnawave",
+    "statistics",
     "users",
 ]

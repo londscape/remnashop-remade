@@ -36,10 +36,129 @@ msg-main-menu =
 
 # Dashboard
 msg-dashboard-main = <b>🛠 Панель управления</b>
-msg-statistics-main = <b>📊 Статистика</b>
 msg-users-main = <b>👥 Пользователи</b>
 msg-broadcast-main = <b>📢 Рассылка</b>
 msg-promocodes-main = <b>🎟 Промокоды</b>
+msg-statistics-main = { $statistics }
+    
+msg-statistics-users =
+    <b>👥 Статистика по пользователям</b>
+
+    <blockquote>
+    • <b>Всего</b>: { $total_users }
+    • <b>Новые за день</b>: { $new_users_daily }
+    • <b>Новые за неделю</b>: { $new_users_weekly }
+    • <b>Новые за месяц</b>: { $new_users_monthly }
+    </blockquote>
+
+    <blockquote>
+    • <b>С подпиской</b>: { $users_with_subscription }
+    • <b>Без подписки</b>: { $users_without_subscription }
+    • <b>С пробным периодом</b>: { $users_with_trial }
+    </blockquote>
+
+    <blockquote>
+    • <b>Заблокированные</b>: { $blocked_users }
+    • <b>Заблокировали бота</b>: { $bot_blocked_users }
+    </blockquote>
+
+    <blockquote>
+    • <b>Конверсия пользователей → покупка</b>: { $user_conversion }%
+    • <b>Конверсия пробников → подписка</b>: { $trial_conversion }%
+    </blockquote>
+
+msg-statistics-transactions =
+    <b>🧾 Статистика по транзакциям</b>
+
+    <blockquote>
+    • <b>Всего транзакций</b>: { $total_transactions }
+    • <b>Завершенных транзакций</b>: { $completed_transactions }
+    • <b>Бесплатных транзакций</b>: { $free_transactions }
+    • <b>Популярная платежная система</b>: { $popular_gateway ->
+    [0] { unknown }
+    *[HAS] { $popular_gateway }
+    }
+    </blockquote>
+
+    { $payment_gateways }
+
+msg-statistics-subscriptions =
+    <b>💳 Статистика по подпискам</b>
+
+    <blockquote>
+    • <b>Активные</b>: { $total_active_subscriptions }
+    • <b>Истекшие</b>: { $total_expire_subscriptions }
+    • <b>Пробные</b>: { $active_trial_subscriptions }
+    • <b>Истекающие (7 дней)</b>: { $expiring_subscriptions }
+    </blockquote>
+
+    <blockquote>
+    • <b>С безлимитом</b>: { $total_unlimited }
+    • <b>С лимитом трафика</b>: { $total_traffic }
+    • <b>С лимитом устройств</b>: { $total_devices }
+    </blockquote>
+
+msg-statistics-plans = 
+    <b>📦 Статистика по планам</b>
+
+    { $popular_plan -> 
+    [0] { unknown }
+    *[HAS]
+
+    <blockquote>
+    • <b>Популярный план</b>: { $popular_plan }
+    </blockquote>
+    }
+    
+    { $plans }
+
+msg-statistics-promocodes =
+    <b>🎁 Статистика по промокодам</b>
+
+    <blockquote>
+    • <b>Общее кол-во активаций</b>: { $total_promo_activations }
+    • <b>Самый популярный промокод</b>: { $most_popular_promo ->
+    [0] { unknown }
+    *[HAS] { $most_popular_promo }
+    }
+    • <b>Выдано дней</b>: { $total_promo_days }
+    • <b>Выдано трафика</b>: { $total_promo_days }
+    • <b>Выдано подписок</b>: { $total_promo_subscriptions }
+    • <b>Выдано личных скидок</b>: { $total_promo_personal_discounts }
+    • <b>Выдано одноразовых скидок</b>: { $total_promo_purchase_discounts }
+    </blockquote>
+
+msg-statistics-referrals =
+    <b>👪 Статистика по реферальной системе</b>
+    
+    <blockquote>
+    • <b></b>:
+    </blockquote>
+
+msg-statistics-transactions-gateway =
+    <b>{ gateway-type }:</b>
+    <blockquote>
+    • <b>Общий доход</b>: { $total_income }{ $currency }
+    • <b>Доход за день</b>: { $daily_income }{ $currency }
+    • <b>Доход за неделю</b>: { $weekly_income }{ $currency }
+    • <b>Доход за месяц</b>: { $monthly_income }{ $currency }
+    • <b>Средний чек</b>: { $average_check }{ $currency }
+    • <b>Сумма скидок</b>: { $total_discounts }{ $currency }
+    </blockquote>
+
+msg-statistics-plan =
+    <b>{ $plan_name }:</b>
+    <blockquote>
+    • <b>Всего подписок</b>: { $total_subscriptions }
+    • <b>Активных подписок</b>: { $active_subscriptions }
+    • <b>Популярная длительность</b>: { $popular_duration }
+
+    • <b>Общий доход</b>: 
+    { $all_income }
+    </blockquote>
+
+msg-statistics-plan-income = { $income }{ $currency }
+    
 
 
 # Access
@@ -74,7 +193,7 @@ msg-broadcast-send = <b>📢 Отправить рассылку ({ audience-typ
     } будет отправлена рассылка
 
 msg-broadcast-content =
-    <b>✉️ Контент рассылки</b>
+    <b>✉️ Содержимое рассылки</b>
 
     Отправьте любое сообщение: текст, изображение или всё вместе (поддерживается HTML)
 
@@ -102,6 +221,7 @@ msg-users-recent-registered = <b>🆕 Последние зарегистрир�
 msg-users-recent-activity = <b>📝 Последние взаимодействующие</b>
 msg-user-transactions = <b>🧾 Транзакции пользователя</b>
 msg-user-devices = <b>📱 Устройства пользователя ({ $current_count } / { $max_count })</b>
+msg-user-give-access = <b>🔑 Предоставить доступ к плану</b>
 
 msg-users-search =
     <b>🔍 Поиск пользователя</b>
@@ -172,6 +292,8 @@ msg-user-subscription-device-limit =
 msg-user-subscription-expire-time =
     <b>⏳ Изменить срок действия</b>
 
+    <b>Закончится через: { $expire_time }</b>
+
     Выберите по кнопке или введите свой вариант (в днях), чтобы добавить или отнять
 
 msg-user-subscription-squads =
@@ -187,15 +309,15 @@ msg-user-subscription-info =
 
     <blockquote>
     • <b>Сквады</b>: { $squads -> 
-    [0] { empty }
+    [0] { unknown }
     *[HAS] { $squads }
     }
     • <b>Первое подключение</b>: { $first_connected_at -> 
-    [0] { empty }
+    [0] { unknown }
     *[HAS] { $first_connected_at }
     }
     • <b>Последнее подключение</b>: { $last_connected_at ->
-    [0] { empty }
+    [0] { unknown }
     *[HAS] { $last_connected_at } ({ $node_name })
     } 
     </blockquote>
@@ -232,11 +354,11 @@ msg-users-blacklist =
 
     Заблокировано: <b>{ $count_blocked }</b> / <b>{ $count_users }</b> ({ $percent }%)
 
-msg-users-unblock-all =
-    <b>🚫 Черный список</b>
+msg-user-message =
+    <b>📩 Отправить сообщение пользователю</b>
 
-    Вы уверены, что хотите разблокировать всех пользователей?
-
+    Отправьте любое сообщение: текст, изображение или всё вместе (поддерживается HTML)
+    
 
 # RemnaWave
 msg-remnawave-main =
@@ -331,11 +453,11 @@ msg-admins-main = <b>👮‍♂️ Администраторы</b>
 
 # Gateways
 msg-gateways-main = <b>🌐 Платежные системы</b>
-msg-gateways-settings = <b>🌐 { gateway-type }</b>
+msg-gateways-settings = <b>🌐 Конфигурация { gateway-type }</b>
 msg-gateways-default-currency = <b>💸 Валюта по умолчанию</b>
 
 msg-gateways-field =
-    <b>🌐 { gateway-type }</b>
+    <b>🌐 Конфигурация { gateway-type }</b>
 
     Введите новое значение для { $field }
 

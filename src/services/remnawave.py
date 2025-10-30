@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -43,7 +42,6 @@ from src.core.utils.formatters import (
     i18n_format_expire_time,
     i18n_format_traffic_limit,
 )
-from src.core.utils.time import datetime_now
 from src.infrastructure.database.models.dto import PlanSnapshotDto, UserDto
 from src.infrastructure.database.models.dto.subscription import SubscriptionDto
 from src.infrastructure.redis import RedisRepository
@@ -123,9 +121,7 @@ class RemnawaveService(BaseService):
         uuid: UUID,
         plan: Optional[PlanSnapshotDto] = None,
         subscription: Optional[SubscriptionDto] = None,
-        current_expire_at: Optional[datetime] = None,
-        not_update_expire_at: bool = False,
-        reset_traffic: bool = True,
+        reset_traffic: bool = False,
     ) -> UserResponseDto:
         if subscription:
             status = subscription.status
@@ -142,14 +138,7 @@ class RemnawaveService(BaseService):
             traffic_limit = plan.traffic_limit
             device_limit = plan.device_limit
             internal_squads = plan.internal_squads
-
-            if current_expire_at and current_expire_at > datetime_now():
-                duration = format_days_to_datetime(plan.duration) - datetime_now()
-                expire_at = current_expire_at + duration
-            elif not_update_expire_at:
-                expire_at = None
-            else:
-                expire_at = format_days_to_datetime(plan.duration)
+            expire_at = format_days_to_datetime(plan.duration)
 
             logger.info(
                 f"{self.tag} Updating Remnawave user '{user.remna_name}' from plan '{plan.name}'"
@@ -375,7 +364,7 @@ class RemnawaveService(BaseService):
         event: str,
         remna_user: RemnaUserDto,
         device: RemnaHwidUserDeviceDto,
-    ) -> None:  # TODO: userdto
+    ) -> None:
         logger.info(f"{self.tag} Received device event '{event}' for user '{remna_user.username}'")
 
         if not remna_user.username.startswith(REMNASHOP_PREFIX):
@@ -439,7 +428,7 @@ class RemnawaveService(BaseService):
             i18n_key = "ntf-event-node-connection-restored"
 
         elif event == RemnaNodeEvent.TRAFFIC_NOTIFY:
-            # TODO: Temporarily shutting down the node before the traffic is reset
+            # TODO: Temporarily shutting down the node (and plans?) before the traffic is reset
             logger.debug(f"{self.tag} Traffic threshold reached on node '{node.name}'")
             i18n_key = "ntf-event-node-traffic"
 

@@ -161,6 +161,10 @@ class BroadcastService(BaseService):
         plan_id: Optional[int] = None,
     ) -> list[UserDto]:
         logger.debug(f"{self.tag} Retrieving users for audience '{audience}', plan_id: {plan_id}")
+        is_not_block = and_(
+            User.is_blocked.is_(False),
+            User.is_bot_blocked.is_(False),
+        )
 
         if audience == BroadcastAudience.PLAN and plan_id:
             db_subscriptions = await self.uow.repository.subscriptions.filter_by_plan_id(plan_id)
@@ -174,29 +178,32 @@ class BroadcastService(BaseService):
             return UserDto.from_model_list(db_users)
 
         if audience == BroadcastAudience.ALL:
-            conditions = and_(User.is_blocked.is_(False), User.is_bot_blocked.is_(False))
+            conditions = is_not_block
             db_users = await self.uow.repository.users._get_many(User, conditions)
             return UserDto.from_model_list(db_users)
 
         if audience == BroadcastAudience.SUBSCRIBED:
-            conditions = User.current_subscription_id.is_not(None)
+            conditions = and_(User.current_subscription_id.is_not(None), is_not_block)
             db_users = await self.uow.repository.users._get_many(User, conditions)
             return UserDto.from_model_list(db_users)
 
         if audience == BroadcastAudience.UNSUBSCRIBED:
-            conditions = User.current_subscription_id.is_(None)
+            conditions = and_(User.current_subscription_id.is_(None), is_not_block)
             db_users = await self.uow.repository.users._get_many(User, conditions)
             return UserDto.from_model_list(db_users)
 
         if audience == BroadcastAudience.EXPIRED:
             conditions = and_(
-                User.current_subscription.has(Subscription.status == SubscriptionStatus.EXPIRED)
+                User.current_subscription.has(Subscription.status == SubscriptionStatus.EXPIRED),
+                is_not_block,
             )
             db_users = await self.uow.repository.users._get_many(User, conditions)
             return UserDto.from_model_list(db_users)
 
         if audience == BroadcastAudience.TRIAL:
-            conditions = and_(User.current_subscription.has(Subscription.is_trial.is_(True)))
+            conditions = and_(
+                User.current_subscription.has(Subscription.is_trial.is_(True)), is_not_block
+            )
             db_users = await self.uow.repository.users._get_many(User, conditions)
             return UserDto.from_model_list(db_users)
 

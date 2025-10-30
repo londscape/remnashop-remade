@@ -10,7 +10,7 @@ from src.bot.states import DashboardUsers
 from src.core.constants import USER_KEY
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
-from src.infrastructure.database.models.dto import UserDto
+from src.core.utils.validators import is_double_click
 from src.services.notification import NotificationService
 from src.services.user import UserService
 
@@ -26,7 +26,7 @@ async def on_user_search(
     user_service: FromDishka[UserService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
 
     if not user.is_privileged:
         return
@@ -61,7 +61,7 @@ async def on_user_select(
     dialog_manager: DialogManager,
     selected_user: int,
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
 
     logger.info(f"{log(user)} User id '{selected_user}' selected")
     await start_user_window(manager=dialog_manager, target_telegram_id=selected_user)
@@ -73,12 +73,21 @@ async def on_unblock_all(
     widget: Button,
     dialog_manager: DialogManager,
     user_service: FromDishka[UserService],
+    notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     blocked_users = await user_service.get_blocked_users()
 
-    for blocked_user in blocked_users:
-        await user_service.set_block(user=blocked_user, blocked=False)
+    if is_double_click(dialog_manager, key="unblock_all_confirm", cooldown=5):
+        for blocked_user in blocked_users:
+            await user_service.set_block(user=blocked_user, blocked=False)
 
-    logger.warning(f"{log(user)} Unblocked all users")
-    await dialog_manager.start(state=DashboardUsers.BLACKLIST, mode=StartMode.RESET_STACK)
+        logger.warning(f"{log(user)} Unblocked all users")
+        await dialog_manager.start(state=DashboardUsers.BLACKLIST, mode=StartMode.RESET_STACK)
+        return
+
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(i18n_key="ntf-double-click-confirm"),
+    )
+    logger.debug(f"{log(user)} Awaiting confirmation to unblock all users")

@@ -1,5 +1,6 @@
 from aiogram_dialog import Dialog, StartMode, Window
-from aiogram_dialog.widgets.kbd import Button, Row, Start, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Row, Start
+from magic_filter import F
 
 from src.bot.states import (
     Dashboard,
@@ -7,23 +8,23 @@ from src.bot.states import (
     DashboardBroadcast,
     DashboardPromocodes,
     DashboardRemnashop,
+    DashboardStatistics,
     DashboardUsers,
     MainMenu,
 )
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName
 
-from .getters import dashboard_getter
 from .remnawave.handlers import start_remnawave_window
 
 dashboard = Window(
     Banner(BannerName.DASHBOARD),
     I18nFormat("msg-dashboard-main"),
     Row(
-        SwitchTo(
+        Start(
             text=I18nFormat("btn-dashboard-statistics"),
             id="statistics",
-            state=Dashboard.STATISTICS,
+            state=DashboardStatistics.MAIN,
         ),
         Start(
             text=I18nFormat("btn-dashboard-users"),
@@ -66,7 +67,7 @@ dashboard = Window(
             state=DashboardRemnashop.MAIN,
             mode=StartMode.RESET_STACK,
         ),
-        when="is_dev",
+        when=F["middleware_data"]["user"].is_dev,
     ),
     Row(
         Start(
@@ -78,24 +79,6 @@ dashboard = Window(
     ),
     IgnoreUpdate(),
     state=Dashboard.MAIN,
-    getter=dashboard_getter,
 )
 
-statistics = Window(
-    Banner(BannerName.DASHBOARD),
-    I18nFormat("msg-statistics-main"),
-    Row(
-        SwitchTo(
-            text=I18nFormat("btn-back"),
-            id="back",
-            state=Dashboard.MAIN,
-        ),
-    ),
-    IgnoreUpdate(),
-    state=Dashboard.STATISTICS,
-)
-
-router = Dialog(
-    dashboard,
-    statistics,
-)
+router = Dialog(dashboard)

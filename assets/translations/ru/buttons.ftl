@@ -4,17 +4,34 @@ btn-back-menu = ⬅️ Вернуться в меню
 btn-back-dashboard = ⬅️ Вернуться в панель управления
 
 
-# Rules
+# Other
 btn-rules-accept = ✅ Принять правила
-
-
-# Channel
 btn-channel-join = ❤️ Перейти в канал
 btn-channel-confirm = ✅ Подтвердить
-
-
-# Notification
 btn-notification-close = ❌ Закрыть
+btn-contact-support = 📩 Перейти в поддержку
+
+btn-statistics-page =
+    { $target_page1 ->
+    [1] 👥
+    [2] 🧾
+    [3] 💳
+    [4] 📦
+    [5] 🎁
+    [6] 👪
+    *[OTHER] page
+    }
+
+btn-statistics-current-page =
+    { $current_page1 ->
+    [1] [👥]
+    [2] [🧾]
+    [3] [💳]
+    [4] [📦]
+    [5] [🎁]
+    [6] [👪]
+    *[OTHER] [page]
+    }
 
 
 # Menu
@@ -46,7 +63,6 @@ btn-users-recent-registered = 🆕 Последние зарегистриров
 btn-users-recent-activity = 📝 Последние взаимодействующие
 btn-users-blacklist = 🚫 Чёрный список
 btn-users-unblock-all = 🔓 Разблокировать всех
-btn-users-unblock-all-confirm = ✅ Подтвердить
 
 
 # User
@@ -67,6 +83,19 @@ btn-user-subscription-devices = 🧾 Список устройств
 btn-user-subscription-url = 📋 Скопировать ссылку
 btn-user-subscription-set = ✅ Установить подписку
 btn-user-subscription-delete = ❌ Удалить
+btn-user-message-preview = 👀 Предпросмотр
+btn-user-message-confirm = ✅ Отправить
+
+
+btn-user-subscription-duration = { $operation ->
+    [ADD] +
+    *[SUB] -
+    } { $duration }
+
+btn-user-allowed-plan-select = { $selected ->
+    [1] 🔘
+    *[0] ⚪
+    } { $plan_name }
 
 btn-user-subscription-active-toggle = { $is_active ->
     [1] 🔴 Выключить
@@ -96,7 +125,7 @@ btn-broadcast-subscribed = ✅ С подпиской
 btn-broadcast-unsubscribed = ❌ Без подписки
 btn-broadcast-expired = ⌛ Просроченным
 btn-broadcast-trial = ✳️ С пробником
-btn-broadcast-content = ✉️ Редактировать контент
+btn-broadcast-content = ✉️ Редактировать содержимое
 btn-broadcast-buttons = ✳️ Редактировать кнопки
 btn-broadcast-preview = 👀 Предпросмотр
 btn-broadcast-confirm = ✅ Запустить рассылку
@@ -159,8 +188,9 @@ btn-remnashop-audit = 🔍 Аудит
 
 # Gateways
 btn-gateway-title = { gateway-type }
-btn-gateways-guide = Инструкция
 btn-gateways-setting = { $field }
+btn-gateways-guide = ❓ Инструкция
+btn-gateways-webhook-copy = 📋 Скопировать вебхук
 
 btn-gateway-active = { $is_active ->
     [1] 🟢 Включено
@@ -277,11 +307,6 @@ btn-subscription-new = 💸 Купить подписку
 btn-subscription-renew = 🔄 Продлить
 btn-subscription-change = 🔃 Изменить
 btn-subscription-promocode = 🎟 Активировать промокод
-btn-subscription-plan = { $name }
-btn-subscription-duration = { $period } | { $price ->
-    [0] 🎁
-    *[OTHER] { $price } { $currency }
-    } 
 btn-subscription-payment-method = { gateway-type } | { $price } { $currency }
 btn-subscription-pay = 💳 Оплатить
 btn-subscription-get = 🎁 Получить бесплатно
@@ -289,3 +314,7 @@ btn-subscription-back-plans = ⬅️ Назад к выбору плана
 btn-subscription-back-duration = ⬅️ Изменить длительность
 btn-subscription-back-payment-method = ⬅️ Изменить способ оплаты
 btn-subscription-connect = 🚀 Подключиться
+btn-subscription-duration = { $period } | { $final_amount -> 
+    [0] 🎁
+    *[HAS] { $final_amount }{ $currency }
+    }

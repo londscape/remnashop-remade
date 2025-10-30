@@ -1,6 +1,7 @@
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Button, Row, Start
+from aiogram_dialog.widgets.kbd import Button, Row, Start, Url
+from aiogram_dialog.widgets.text import Format
 from magic_filter import F
 
 from src.bot.routers.dashboard.users.handlers import on_user_search
@@ -31,10 +32,6 @@ menu = Window(
         ),
     ),
     Row(
-        # Button(
-        #     text=I18nFormat(ButtonKey.PROMOCODE),
-        #     id="promocode",
-        # ),
         Start(
             text=I18nFormat("btn-menu-subscription"),
             id=f"{PURCHASE_PREFIX}subscription",
@@ -47,10 +44,10 @@ menu = Window(
             id="invite",
             on_click=show_dev_popup,
         ),
-        Button(
+        Url(
             text=I18nFormat("btn-menu-support"),
             id="support",
-            on_click=show_dev_popup,
+            url=Format("{support}"),
         ),
     ),
     Row(
@@ -59,7 +56,7 @@ menu = Window(
             id="dashboard",
             state=Dashboard.MAIN,
             mode=StartMode.RESET_STACK,
-            when="is_privileged",
+            when=F["middleware_data"]["user"].is_privileged,
         ),
     ),
     MessageInput(func=on_user_search),
@@ -68,6 +65,4 @@ menu = Window(
     getter=menu_getter,
 )
 
-router = Dialog(
-    menu,
-)
+router = Dialog(menu)

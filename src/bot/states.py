@@ -29,7 +29,10 @@ class Subscription(StatesGroup):
 
 class Dashboard(StatesGroup):
     MAIN = State()
-    STATISTICS = State()
+
+
+class DashboardStatistics(StatesGroup):
+    MAIN = State()
 
 
 class DashboardBroadcast(StatesGroup):
@@ -64,7 +67,6 @@ class DashboardUsers(StatesGroup):
     RECENT_REGISTERED = State()
     RECENT_ACTIVITY = State()
     BLACKLIST = State()
-    UNBLOCK_ALL = State()
 
 
 class DashboardUser(StatesGroup):
@@ -80,6 +82,8 @@ class DashboardUser(StatesGroup):
     ROLE = State()
     TRANSACTIONS_LIST = State()
     TRANSACTION = State()
+    GIVE_ACCESS = State()
+    MESSAGE = State()
 
 
 class DashboardRemnashop(StatesGroup):
@@ -104,8 +108,6 @@ class RemnashopNotifications(StatesGroup):
 
 class RemnashopPlans(StatesGroup):
     MAIN = State()
-    STATISTICS = State()
-
     PLAN = State()
     NAME = State()
     TYPE = State()

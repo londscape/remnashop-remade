@@ -3,6 +3,7 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import (
     Button,
     Column,
+    CopyText,
     Group,
     ListGroup,
     Row,
@@ -86,6 +87,12 @@ gateway_settings = Window(
             on_click=on_field_select,
         ),
         width=2,
+    ),
+    Row(
+        CopyText(
+            text=I18nFormat("btn-gateways-webhook-copy"),
+            copy_text=Format("{webhook}"),
+        ),
     ),
     Row(
         Url(

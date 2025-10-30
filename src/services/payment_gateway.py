@@ -84,27 +84,21 @@ class PaymentGatewayService(BaseService):
 
             match gateway_type:
                 case PaymentGatewayType.TELEGRAM_STARS:
-                    currency = Currency.XTR
                     is_active = True
                     settings = None
                 case PaymentGatewayType.YOOKASSA:
-                    currency = Currency.RUB
                     is_active = False
                     settings = YookassaGatewaySettingsDto()
                 case PaymentGatewayType.YOOMONEY:
-                    currency = Currency.RUB
                     is_active = False
                     settings = YoomoneyGatewaySettingsDto()
                 case PaymentGatewayType.CRYPTOMUS:
-                    currency = Currency.USD
                     is_active = False
                     settings = CryptomusGatewaySettingsDto()
                 case PaymentGatewayType.HELEKET:
-                    currency = Currency.USD
                     is_active = False
                     settings = HeleketGatewaySettingsDto()
                 case PaymentGatewayType.URLPAY:
-                    currency = Currency.RUB
                     is_active = False
                     settings = UrlpayGatewaySettingsDto()
                 case _:
@@ -119,7 +113,7 @@ class PaymentGatewayService(BaseService):
             payment_gateway = PaymentGatewayDto(
                 order_index=order_index,
                 type=gateway_type,
-                currency=currency,
+                currency=Currency.from_gateway_type(gateway_type),
                 is_active=is_active,
                 settings=settings,
             )

@@ -72,7 +72,7 @@ plans = Window(
     I18nFormat("msg-subscription-plans"),
     Column(
         Select(
-            text=I18nFormat("btn-subscription-plan", name=F["item"]["name"]),
+            text=Format("{item[name]}"),
             id=f"{PURCHASE_PREFIX}select_plan",
             item_id_getter=lambda item: item["id"],
             items="plans",
@@ -107,7 +107,9 @@ duration = Window(
             text=I18nFormat(
                 "btn-subscription-duration",
                 period=F["item"]["period"],
-                price=F["item"]["price"],
+                final_amount=F["item"]["final_amount"],
+                discount_percent=F["item"]["discount_percent"],
+                original_amount=F["item"]["original_amount"],
                 currency=F["item"]["currency"],
             ),
             id=f"{PURCHASE_PREFIX}select_duration",
@@ -125,12 +127,6 @@ duration = Window(
             state=Subscription.PLANS,
             when=~F["only_single_plan"],
         ),
-        # SwitchTo(
-        #     text=I18nFormat("btn-back"),
-        #     id=f"{PURCHASE_PREFIX}back_main",
-        #     state=Subscription.MAIN,
-        #     when=(F["only_single_plan"]) | (F["purchase_type"] == PurchaseType.RENEW),
-        # ),
     ),
     Row(
         Start(
@@ -169,12 +165,6 @@ payment_method = Window(
             state=Subscription.DURATION,
             when=~F["only_single_duration"],
         ),
-        # SwitchTo(
-        #     text=I18nFormat("btn-back"),
-        #     id=f"{PURCHASE_PREFIX}back_main",
-        #     state=Subscription.MAIN,
-        #     when=F["only_single_duration"],
-        # ),
     ),
     Row(
         Start(
@@ -195,7 +185,7 @@ confirm = Window(
         Url(
             text=I18nFormat("btn-subscription-pay"),
             url=Format("{url}"),
-            when="url",
+            when=F["url"],
         ),
         Button(
             text=I18nFormat("btn-subscription-get"),

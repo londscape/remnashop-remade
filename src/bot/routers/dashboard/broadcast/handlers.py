@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime, timedelta
 from typing import Any, Optional
 from uuid import UUID
 
@@ -11,15 +10,18 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
+from fluentogram import TranslatorRunner
 from loguru import logger
 
 from src.bot.keyboards import goto_buttons
 from src.bot.states import DashboardBroadcast
+from src.core.config.app import AppConfig
 from src.core.constants import USER_KEY
 from src.core.enums import BroadcastAudience, BroadcastStatus, MediaType
 from src.core.utils.formatters import format_user_log as log
+from src.core.utils.formatters import format_username_to_url
 from src.core.utils.message_payload import MessagePayload
-from src.core.utils.time import datetime_now
+from src.core.utils.validators import is_double_click
 from src.infrastructure.database.models.dto import BroadcastDto, PlanDto, UserDto
 from src.infrastructure.taskiq.tasks.broadcast import delete_broadcast_task, send_broadcast_task
 from src.services.broadcast import BroadcastService
@@ -57,7 +59,7 @@ async def on_broadcast_list(
     broadcast_service: FromDishka[BroadcastService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     broadcasts = await broadcast_service.get_all()
 
     if not broadcasts:
@@ -89,7 +91,7 @@ async def on_audience_select(
     broadcast_service: FromDishka[BroadcastService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
 
     if not callback.data:
         raise ValueError("Callback data is empty")
@@ -130,7 +132,7 @@ async def on_plan_select(
     broadcast_service: FromDishka[BroadcastService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     plan: Optional[PlanDto] = await plan_service.get(plan_id=selected_plan_id)
 
     if not plan:
@@ -160,7 +162,7 @@ async def on_content_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set content")
 
     media_type: Optional[MediaType] = None
@@ -196,23 +198,26 @@ async def on_content_input(
         media_id=file_id,
     )
 
-    logger.info(f"{log(user)} Updated broadcast payload (content only)")
+    logger.info(f"{log(user)} Updated message payload (content only)")
     await notification_service.notify_user(
         user=user,
         payload=MessagePayload(i18n_key="ntf-broadcast-content-saved"),
     )
 
 
+@inject
 async def on_button_select(
     callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
+    config: FromDishka[AppConfig],
+    i18n: FromDishka[TranslatorRunner],
 ) -> None:
     await sub_manager.load_data()
     user: UserDto = sub_manager.middleware_data[USER_KEY]
     selected_id = int(sub_manager.item_id)
 
-    buttons = sub_manager.manager.dialog_data.get("buttons", [])
+    buttons: list[dict] = sub_manager.manager.dialog_data.get("buttons", [])
     for button in buttons:
         if button["id"] == selected_id:
             button["selected"] = not button.get("selected", False)
@@ -221,6 +226,11 @@ async def on_button_select(
     builder = InlineKeyboardBuilder()
     for button in buttons:
         if button.get("selected"):
+            if button["id"] == 0:
+                text = i18n.get("contact-support")
+                support_username = config.bot.support_username.get_secret_value()
+                goto_buttons[0].url = format_username_to_url(support_username, text)
+
             builder.row(goto_buttons[int(button["id"])])
 
     _update_payload(sub_manager.manager, reply_markup=builder.as_markup())
@@ -235,7 +245,7 @@ async def on_preview(
     dialog_manager: DialogManager,
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
     payload = dialog_manager.dialog_data.get("payload")
 
     if not payload:
@@ -273,40 +283,32 @@ async def on_send(
     if not audience:
         raise ValueError("BroadcastAudience not found in dialog data")
 
-    key = "broadcast_confirm"
-    now = datetime_now()
-    last_click_str: Optional[str] = dialog_manager.dialog_data.get(key)
+    if is_double_click(dialog_manager, key="broadcast_confirm", cooldown=10):
+        users = await broadcast_service.get_audience_users(audience, plan_id=plan_id)
 
-    if last_click_str:
-        last_click = datetime.fromisoformat(last_click_str.replace("Z", "+00:00"))
-        if now - last_click < timedelta(seconds=10):
-            users = await broadcast_service.get_audience_users(audience, plan_id=plan_id)
+        task_id = uuid.uuid4()
+        broadcast = BroadcastDto(
+            task_id=task_id,
+            status=BroadcastStatus.PROCESSING,
+            total_count=len(users),
+            audience=audience,
+            payload=payload,
+        )
+        broadcast = await broadcast_service.create(broadcast)
 
-            task_id = uuid.uuid4()
-            broadcast = BroadcastDto(
-                task_id=task_id,
-                status=BroadcastStatus.PROCESSING,
-                total_count=len(users),
-                audience=audience,
-                payload=payload,
-            )
-            broadcast = await broadcast_service.create(broadcast)
+        task = (
+            await send_broadcast_task.kicker()
+            .with_task_id(str(task_id))
+            .kiq(broadcast, users, payload)
+        )
 
-            task = (
-                await send_broadcast_task.kicker()
-                .with_task_id(str(task_id))
-                .kiq(broadcast, users, payload)
-            )
-            dialog_manager.dialog_data.pop(key, None)
-            dialog_manager.dialog_data["task_id"] = task.task_id
+        dialog_manager.dialog_data["task_id"] = task.task_id
+        await dialog_manager.switch_to(state=DashboardBroadcast.VIEW)
+        return
 
-            await dialog_manager.switch_to(state=DashboardBroadcast.VIEW)
-            return
-
-    dialog_manager.dialog_data[key] = now.isoformat()
     await notification_service.notify_user(
         user=user,
-        payload=MessagePayload(i18n_key="ntf-broadcast-click-for-confirm"),
+        payload=MessagePayload(i18n_key="ntf-double-click-confirm"),
     )
     logger.debug(f"{log(user)} Awaiting confirmation for broadcast send")
 

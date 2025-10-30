@@ -10,7 +10,6 @@ from src.bot.states import DashboardRemnawave
 from src.core.constants import USER_KEY
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
-from src.infrastructure.database.models.dto import UserDto
 from src.services.notification import NotificationService
 
 
@@ -22,7 +21,7 @@ async def start_remnawave_window(
     remnawave: FromDishka[RemnawaveSDK],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    user = dialog_manager.middleware_data[USER_KEY]
 
     try:
         await remnawave.system.get_stats()
