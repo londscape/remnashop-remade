@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+# from remnawave.enums.users import TrafficLimitStrategy
 from src.core.enums import Currency, PlanAvailability, PlanType
 
 from .base import TrackableDto
@@ -12,11 +13,14 @@ from .base import TrackableDto
 class PlanSnapshotDto(TrackableDto):
     id: int
     name: str
+    # tag: str
     type: PlanType
     traffic_limit: int
     device_limit: int
     duration: int
+    # traffic_limit_strategy: TrafficLimitStrategy
     internal_squads: list[UUID]
+    # external_squad: UUID
 
     @property
     def is_unlimited_duration(self) -> bool:

@@ -10,11 +10,11 @@ from aiogram_dialog.widgets.kbd import (
     Select,
     Start,
     SwitchTo,
-    Url,
 )
 from aiogram_dialog.widgets.text import Format
 from magic_filter import F
 
+from src.bot.keyboards import main_menu_button
 from src.bot.states import DashboardRemnashop, RemnashopGateways
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, Currency
@@ -68,6 +68,7 @@ gateways = Window(
             state=DashboardRemnashop.MAIN,
             mode=StartMode.RESET_STACK,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=RemnashopGateways.MAIN,
@@ -92,12 +93,6 @@ gateway_settings = Window(
         CopyText(
             text=I18nFormat("btn-gateways-webhook-copy"),
             copy_text=Format("{webhook}"),
-        ),
-    ),
-    Row(
-        Url(
-            text=I18nFormat("btn-gateways-guide"),
-            url=Format("{url}"),
         ),
     ),
     Row(

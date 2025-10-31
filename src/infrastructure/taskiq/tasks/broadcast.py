@@ -1,8 +1,7 @@
 import asyncio
 
 from aiogram import Bot
-from dishka import FromDishka
-from dishka.integrations.taskiq import inject
+from dishka.integrations.taskiq import FromDishka, inject
 
 from src.core.constants import BATCH_DELAY, BATCH_SIZE
 from src.core.enums import BroadcastMessageStatus, BroadcastStatus

@@ -11,6 +11,7 @@ from src.core.constants import USER_KEY
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.core.utils.validators import is_double_click
+from src.infrastructure.database.models.dto import UserDto
 from src.services.notification import NotificationService
 from src.services.user import UserService
 
@@ -26,7 +27,7 @@ async def on_user_search(
     user_service: FromDishka[UserService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     if not user.is_privileged:
         return
@@ -61,7 +62,7 @@ async def on_user_select(
     dialog_manager: DialogManager,
     selected_user: int,
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     logger.info(f"{log(user)} User id '{selected_user}' selected")
     await start_user_window(manager=dialog_manager, target_telegram_id=selected_user)
@@ -75,7 +76,7 @@ async def on_unblock_all(
     user_service: FromDishka[UserService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     blocked_users = await user_service.get_blocked_users()
 
     if is_double_click(dialog_manager, key="unblock_all_confirm", cooldown=5):

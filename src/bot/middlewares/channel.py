@@ -70,7 +70,7 @@ class ChannelMiddleware(EventTypedMiddleware):
                     "user_id": str(user.telegram_id),
                     "user_name": user.name,
                     "username": user.username or False,
-                    "error": f"{error_type_name}: Skipped channel '{channel_link}' "
+                    "error": f"{error_type_name}: Skipped channel required '{channel_link}' "
                     + f"check due to error: {error_message.as_html()}",
                 },
             )

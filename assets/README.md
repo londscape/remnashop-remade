@@ -98,7 +98,7 @@ All translation keys must follow a unified structure:
 4. States — adjectives (empty, invalid, not-found, expired, not-available).
 5. Limit to 5 segments maximum.
 
-## Examples
+## Examples keys
 
 | Purpose                               | Key                               |
 | ------------------------------------- | --------------------------------- |

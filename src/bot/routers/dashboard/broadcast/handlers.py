@@ -59,7 +59,7 @@ async def on_broadcast_list(
     broadcast_service: FromDishka[BroadcastService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     broadcasts = await broadcast_service.get_all()
 
     if not broadcasts:
@@ -91,7 +91,7 @@ async def on_audience_select(
     broadcast_service: FromDishka[BroadcastService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     if not callback.data:
         raise ValueError("Callback data is empty")
@@ -132,7 +132,7 @@ async def on_plan_select(
     broadcast_service: FromDishka[BroadcastService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     plan: Optional[PlanDto] = await plan_service.get(plan_id=selected_plan_id)
 
     if not plan:
@@ -162,7 +162,7 @@ async def on_content_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set content")
 
     media_type: Optional[MediaType] = None
@@ -245,7 +245,7 @@ async def on_preview(
     dialog_manager: DialogManager,
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     payload = dialog_manager.dialog_data.get("payload")
 
     if not payload:
@@ -268,7 +268,7 @@ async def on_send(
     notification_service: FromDishka[NotificationService],
     broadcast_service: FromDishka[BroadcastService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     audience: Optional[BroadcastAudience] = dialog_manager.dialog_data.get("audience_type")
     plan_id = dialog_manager.dialog_data.get("plan_id")
     payload = dialog_manager.dialog_data.get("payload")
@@ -321,7 +321,7 @@ async def on_cancel(
     notification_service: FromDishka[NotificationService],
     broadcast_service: FromDishka[BroadcastService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     task_id = dialog_manager.dialog_data["task_id"]
     broadcast = await broadcast_service.get(task_id)
 
@@ -352,7 +352,7 @@ async def on_delete(
     notification_service: FromDishka[NotificationService],
     broadcast_service: FromDishka[BroadcastService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     task_id = dialog_manager.dialog_data["task_id"]
     broadcast = await broadcast_service.get(task_id)
 

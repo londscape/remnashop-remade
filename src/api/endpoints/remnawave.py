@@ -1,6 +1,8 @@
+import traceback
+import uuid
 from typing import cast
 
-import orjson
+from aiogram.utils.formatting import Text
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
 from fastapi import APIRouter, HTTPException, Request, Response, status
@@ -12,6 +14,7 @@ from remnawave.models.webhook import UserHwidDeviceEventDto
 
 from src.core.config.app import AppConfig
 from src.core.constants import API_V1, REMNAWAVE_WEBHOOK_PATH
+from src.infrastructure.taskiq.tasks.notifications import send_error_notification_task
 from src.services.remnawave import RemnawaveService
 
 router = APIRouter(prefix=API_V1)
@@ -32,33 +35,46 @@ async def remnawave_webhook(
             webhook_secret=config.remnawave.webhook_secret.get_secret_value(),
             validate=True,
         )
-    except orjson.JSONDecodeError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON body")
-    except Exception as exc:
-        logger.exception("[REMNAWAVE] Webhook validation failed")
-        raise HTTPException(status_code=401, detail=str(exc))
+    except Exception as exception:
+        logger.exception(f"[REMNAWAVE] Webhook validation failed: {exception}")
+        raise HTTPException(status_code=401)
 
     if not payload:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    if WebhookUtility.is_user_event(payload.event):
-        user = cast(RemnaUserDto, WebhookUtility.get_typed_data(payload))
-        await remnawave_service.handle_user_event(payload.event, user)
+    try:
+        if WebhookUtility.is_user_event(payload.event):
+            user = cast(RemnaUserDto, WebhookUtility.get_typed_data(payload))
+            await remnawave_service.handle_user_event(payload.event, user)
 
-    elif WebhookUtility.is_user_hwid_devices_event(payload.event):
-        # FIXME: dto
-        event = cast(UserHwidDeviceEventDto, WebhookUtility.get_typed_data(payload))
-        await remnawave_service.handle_device_event(
-            payload.event,
-            event.data["user"],
-            event.data["hwidUserDevice"],
+        elif WebhookUtility.is_user_hwid_devices_event(payload.event):
+            event = cast(UserHwidDeviceEventDto, WebhookUtility.get_typed_data(payload))
+            await remnawave_service.handle_device_event(
+                payload.event,
+                event.user,
+                event.hwid_user_device,
+            )
+
+        elif WebhookUtility.is_node_event(payload.event):
+            node = cast(RemnaNodeDto, WebhookUtility.get_typed_data(payload))
+            await remnawave_service.handle_node_event(payload.event, node)
+
+        else:
+            logger.warning(f"[REMNAWAVE] Unhandled Remnawave event type: {payload.event}")
+
+    except Exception as exception:
+        logger.exception(f"[REMNAWAVE] Error processing Remnawave webhook: {exception}")
+        traceback_str = traceback.format_exc()
+        error_type_name = type(exception).__name__
+        error_message = Text(str(exception)[:512])
+
+        await send_error_notification_task.kiq(
+            error_id=str(uuid.uuid4()),
+            traceback_str=traceback_str,
+            i18n_kwargs={
+                "user": False,
+                "error": f"{error_type_name}: {error_message.as_html()}",
+            },
         )
-
-    elif WebhookUtility.is_node_event(payload.event):
-        node = cast(RemnaNodeDto, WebhookUtility.get_typed_data(payload))
-        await remnawave_service.handle_node_event(payload.event, node)
-
-    else:
-        logger.warning(f"[REMNAWAVE] Unhandled Remnawave event type: {payload.event}")
 
     return Response(status_code=status.HTTP_200_OK)

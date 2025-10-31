@@ -13,7 +13,6 @@ from loguru import logger
 from remnawave import RemnawaveSDK
 
 from src.bot.keyboards import get_contact_support_keyboard
-from src.bot.routers.dashboard.broadcast.handlers import _update_payload
 from src.bot.states import DashboardUser
 from src.core.config.app import AppConfig
 from src.core.constants import USER_KEY
@@ -50,7 +49,7 @@ async def on_block_toggle(
     dialog_manager: DialogManager,
     user_service: FromDishka[UserService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -59,7 +58,7 @@ async def on_block_toggle(
 
     blocked = not target_user.is_blocked
     await user_service.set_block(user=target_user, blocked=blocked)
-    await redirect_to_main_menu_task.kiq(target_user)
+    await redirect_to_main_menu_task.kiq(target_user.telegram_id)
     logger.info(f"{log(user)} {'Blocked' if blocked else 'Unblocked'} {log(target_user)}")
 
 
@@ -71,7 +70,7 @@ async def on_role_select(
     selected_role: UserRole,
     user_service: FromDishka[UserService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -79,7 +78,7 @@ async def on_role_select(
         raise ValueError(f"User '{target_telegram_id}' not found")
 
     await user_service.set_role(user=target_user, role=selected_role)
-    await redirect_to_main_menu_task.kiq(target_user)
+    await redirect_to_main_menu_task.kiq(target_user.telegram_id)
     logger.info(f"{log(user)} Changed role to '{selected_role} for {log(target_user)}")
 
 
@@ -91,7 +90,7 @@ async def on_current_subscription(
     subscription_service: FromDishka[SubscriptionService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     subscription = await subscription_service.get_current(target_telegram_id)
 
@@ -113,7 +112,7 @@ async def on_active_toggle(
     subscription_service: FromDishka[SubscriptionService],
     remnawave: FromDishka[RemnawaveSDK],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     subscription = await subscription_service.get_current(target_telegram_id)
 
@@ -146,7 +145,7 @@ async def on_subscription_delete(
     remnawave_service: FromDishka[RemnawaveService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -186,7 +185,7 @@ async def on_devices(
     remnawave_service: FromDishka[RemnawaveService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -240,7 +239,7 @@ async def on_reset_traffic(
     subscription_service: FromDishka[SubscriptionService],
     remnawave: FromDishka[RemnawaveSDK],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     subscription = await subscription_service.get_current(target_telegram_id)
 
@@ -259,7 +258,7 @@ async def on_discount_select(
     selected_discount: int,
     user_service: FromDishka[UserService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected discount '{selected_discount}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
@@ -282,7 +281,7 @@ async def on_discount_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -313,7 +312,7 @@ async def on_traffic_limit_select(
     subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected traffic '{selected_traffic}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
@@ -352,7 +351,7 @@ async def on_traffic_limit_input(
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -396,7 +395,7 @@ async def on_device_limit_select(
     subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected device limit '{selected_device}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
@@ -435,7 +434,7 @@ async def on_device_limit_input(
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -479,7 +478,7 @@ async def on_squad_select(
     subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -515,7 +514,7 @@ async def on_transactions(
     transaction_service: FromDishka[TransactionService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     transactions = await transaction_service.get_by_user(target_telegram_id)
 
@@ -535,7 +534,7 @@ async def on_transaction_select(
     dialog_manager: DialogManager,
     selected_transaction: UUID,
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected transaction '{selected_transaction}'")
     dialog_manager.dialog_data["selected_transaction"] = selected_transaction
     await dialog_manager.switch_to(state=DashboardUser.TRANSACTION)
@@ -549,7 +548,7 @@ async def on_give_access(
     plan_service: FromDishka[PlanService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     plans = await plan_service.get_allowed_plans()
 
     if not plans:
@@ -570,7 +569,7 @@ async def on_plan_select(
     selected_plan_id: int,
     plan_service: FromDishka[PlanService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected plan '{selected_plan_id}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     plan = await plan_service.get(selected_plan_id)
@@ -600,7 +599,7 @@ async def on_duration_select(
     notification_service: FromDishka[NotificationService],
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected duration '{selected_duration}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
@@ -649,7 +648,7 @@ async def on_duration_input(
     remnawave_service: FromDishka[RemnawaveService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
@@ -706,7 +705,7 @@ async def on_send(
     user_service: FromDishka[UserService],
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
 

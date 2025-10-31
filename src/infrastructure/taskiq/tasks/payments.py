@@ -1,14 +1,13 @@
 from uuid import UUID
 
-from dishka import FromDishka
-from dishka.integrations.taskiq import inject
+from dishka.integrations.taskiq import FromDishka, inject
 
 from src.core.enums import TransactionStatus
 from src.infrastructure.taskiq.broker import broker
 from src.services.payment_gateway import PaymentGatewayService
 
 
-@broker.task
+@broker.task()
 @inject
 async def handle_payment_transaction_task(
     payment_id: UUID,

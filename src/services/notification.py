@@ -8,6 +8,8 @@ from fluentogram import TranslatorHub
 from loguru import logger
 from redis.asyncio import Redis
 
+from src.__version__ import __version__
+from src.bot.keyboards import get_remnashop_keyboard
 from src.bot.states import Notification
 from src.core.config import AppConfig
 from src.core.enums import (
@@ -117,34 +119,14 @@ class NotificationService(BaseService):
 
     async def remnashop_notify(self) -> bool:
         dev = await self.user_service.get(self.config.bot.dev_id) or self._get_temp_dev()
-        i18n = self.translator_hub.get_translator_by_locale(locale=dev.language)
-
-        builder = InlineKeyboardBuilder()
-        builder.row(
-            InlineKeyboardButton(
-                text=i18n.get("btn-remnashop-github"),
-                url="https://github.com/snoups/remnashop",
-            ),
-            InlineKeyboardButton(
-                text=i18n.get("btn-remnashop-telegram"),
-                url="https://t.me/remna_shop",
-            ),
-        )
-        builder.row(
-            InlineKeyboardButton(
-                text=i18n.get("btn-remnashop-donate"),
-                url="https://yookassa.ru/my/i/Z8AkHJ_F9sO_/l",
-            ),
-        )
-
         payload = MessagePayload(
             i18n_key="ntf-remnashop-info",
-            reply_markup=builder.as_markup(),
+            i18n_kwargs={"version": __version__},
+            reply_markup=get_remnashop_keyboard(),
             auto_delete_after=None,
             add_close_button=True,
             message_effect=MessageEffect.LOVE,
         )
-
         return bool(await self._send_message(user=dev, payload=payload))
 
     #
@@ -234,6 +216,7 @@ class NotificationService(BaseService):
             text=message_text,
             message_effect_id=payload.message_effect,
             reply_markup=reply_markup,
+            disable_web_page_preview=True,
         )
 
     def _prepare_reply_markup(

@@ -1,6 +1,7 @@
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.kbd import Row, Start, SwitchTo
 
+from src.bot.keyboards import main_menu_button
 from src.bot.states import Dashboard, DashboardRemnawave
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName
@@ -47,6 +48,7 @@ remnawave = Window(
             state=Dashboard.MAIN,
             mode=StartMode.RESET_STACK,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=DashboardRemnawave.MAIN,

@@ -99,7 +99,7 @@ class BaseRepository:
 
     async def _delete(self, model: ModelType[T], *conditions: ConditionType) -> int:
         result = await self.session.execute(delete(model).where(*conditions))
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined, no-any-return]
 
     async def _count(self, model: Type[T], *conditions: ConditionType) -> int:
         query = select(func.count()).select_from(model).where(*conditions)

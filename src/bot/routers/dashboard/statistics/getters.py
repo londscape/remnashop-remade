@@ -7,6 +7,7 @@ from dishka.integrations.aiogram_dialog import inject
 from fluentogram import TranslatorRunner
 
 from src.core.enums import Currency, PaymentGatewayType, PromocodeRewardType, SubscriptionStatus
+from src.core.utils.formatters import format_percent, i18n_format_days
 from src.core.utils.time import datetime_now
 from src.infrastructure.database.models.dto import (
     PlanDto,
@@ -105,7 +106,7 @@ def get_users_statistics(
         for t in transactions
         if t.is_completed and not t.pricing.is_free and t.user is not None
     }
-    user_conversion = (len(paying_users_ids) / total_users * 100) if total_users else 0
+    user_conversion = format_percent(len(paying_users_ids), total_users) if total_users else 0
 
     trial_users = 0
     converted_from_trial = 0
@@ -130,7 +131,7 @@ def get_users_statistics(
             if converted:
                 converted_from_trial += 1
 
-    trial_conversion = (converted_from_trial / trial_users * 100) if trial_users else 0
+    trial_conversion = format_percent(converted_from_trial, trial_users) if trial_users else 0
 
     return {
         "total_users": total_users,
@@ -142,8 +143,8 @@ def get_users_statistics(
         "users_with_trial": users_with_trial,
         "blocked_users": blocked_users,
         "bot_blocked_users": bot_blocked_users,
-        "user_conversion": round(user_conversion, 2),
-        "trial_conversion": round(trial_conversion, 2),
+        "user_conversion": user_conversion,
+        "trial_conversion": trial_conversion,
     }
 
 
@@ -192,7 +193,7 @@ def get_transactions_statistics(
 
     popular_gateway = None
 
-    if gateways_stats:
+    if len(gateways_stats) > 1:
         popular_gateway = max(gateways_stats.items(), key=lambda x: x[1]["paid_count"])[0]
 
     payment_gateways_stats = [
@@ -290,6 +291,16 @@ def get_plans_statistics(
         plan_income.setdefault(plan_id, {})
         plan_income[plan_id][currency] = plan_income[plan_id].get(currency, 0.0) + amount
 
+    active_plan_counts = {
+        p.id: sum(1 for s in subscriptions if s.plan.id == p.id and s.is_active)
+        for p in plans
+        if p.id
+    }
+
+    popular_plan_id = None
+    if len(active_plan_counts) > 1:
+        popular_plan_id = max(active_plan_counts.items(), key=lambda x: x[1])[0]
+
     plans_stats = []
     for p in plans:
         if not p.id:
@@ -306,37 +317,30 @@ def get_plans_statistics(
         incomes = plan_income.get(p.id, {})
         all_income = (
             "\n".join(
-                i18n.get("msg-statistics-plan-income", income=f"{amount:.2f}", currency=currency)
+                i18n.get(
+                    "msg-statistics-plan-income",
+                    income=f"{amount:.2f}",
+                    currency=currency,
+                )
                 for currency, amount in incomes.items()
             )
             or "-"
         )
 
+        key, kw = i18n_format_days(popular_duration)
         plans_stats.append(
             i18n.get(
                 "msg-statistics-plan",
+                popular=(p.id == popular_plan_id),
                 plan_name=p.name,
                 total_subscriptions=total_subs,
                 active_subscriptions=active_subs,
-                popular_duration=popular_duration,
+                popular_duration=i18n.get(key, **kw),
                 all_income=all_income,
             )
         )
 
-    active_plan_counts = {
-        p.id: sum(1 for s in subscriptions if s.plan.id == p.id and s.is_active) for p in plans
-    }
-    popular_plan = (
-        max(active_plan_counts.items(), key=lambda x: x[1])[0] if active_plan_counts else None
-    )
-    popular_plan_name = (
-        next((p.name for p in plans if p.id == popular_plan), "") if popular_plan else "-"
-    )
-
-    return {
-        "plans": "\n".join(plans_stats),
-        "popular_plan": popular_plan_name,
-    }
+    return {"plans": "\n".join(plans_stats)}
 
 
 def get_promocodes_statistics(promocodes: list[PromocodeDto]) -> dict[str, Any]:

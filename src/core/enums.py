@@ -58,13 +58,6 @@ class SubscriptionStatus(UpperStrEnum):
     DELETED = auto()
 
 
-class TrafficLimitStrategy(UpperStrEnum):
-    NO_RESET = auto()
-    DAY = auto()
-    WEEK = auto()
-    MONTH = auto()
-
-
 class MessageEffect(UpperStrEnum):
     FIRE = "5104841245755180586"  #     🔥
     LIKE = "5107584321108051014"  #     👍

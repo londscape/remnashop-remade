@@ -1,6 +1,7 @@
 from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.kbd import NumberedPager, Row, Start, StubScroll
 
+from src.bot.keyboards import main_menu_button
 from src.bot.states import Dashboard, DashboardStatistics
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName
@@ -22,6 +23,7 @@ statistics = Window(
             id="back",
             state=Dashboard.MAIN,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=DashboardStatistics.MAIN,

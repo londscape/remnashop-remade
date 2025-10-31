@@ -26,7 +26,7 @@ async def on_logs_request(
     dialog_manager: DialogManager,
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     try:
         file = FSInputFile(
@@ -89,7 +89,7 @@ async def on_user_role_remove(
         cooldown=10,
     ):
         await user_service.set_role(user=target_user, role=UserRole.USER)
-        await redirect_to_main_menu_task.kiq(target_user)
+        await redirect_to_main_menu_task.kiq(target_user.telegram_id)
         logger.info(f"{log(user)} Changed role for {log(target_user)} to '{UserRole.USER}'")
         return
 

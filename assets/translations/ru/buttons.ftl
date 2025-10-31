@@ -1,7 +1,8 @@
 # Back
 btn-back = ⬅️ Назад
-btn-back-menu = ⬅️ Вернуться в меню
-btn-back-dashboard = ⬅️ Вернуться в панель управления
+btn-main-menu = ↩️ Главное меню
+btn-back-main-menu = ↩️ Вернуться в главное меню
+btn-back-dashboard = ↩️ Вернуться в панель управления
 
 
 # Other
@@ -36,15 +37,21 @@ btn-statistics-current-page =
 
 # Menu
 btn-menu-connect = 🚀 Подключиться
+
+btn-menu-connect-not-available =
+    ⚠️ { $status -> 
+    [LIMITED] ПРЕВЫШЕН ЛИМИТ ТРАФИКА
+    [EXPIRED] СРОК ДЕЙСТВИЯ ИСТЁК
+    *[OTHER] ВАША ПОДПИСКА НЕ РАБОТАЕТ
+    } ⚠️
+
 btn-menu-trial = 🎁 ПОПРОБОВАТЬ БЕСПЛАТНО
+btn-menu-devices = 📱 Мои устройства
+btn-menu-devices-empty = ⚠️ Нет привязанных устройств
 btn-menu-subscription = 💳 Подписка
 btn-menu-invite = 👥 Пригласить
 btn-menu-support = 🆘 Поддержка
 btn-menu-dashboard = 🛠 Панель управления
-
-
-# Connect
-btn-connect = 🚀 Подключиться
 
 
 # Dashboard
@@ -189,7 +196,6 @@ btn-remnashop-audit = 🔍 Аудит
 # Gateways
 btn-gateway-title = { gateway-type }
 btn-gateways-setting = { $field }
-btn-gateways-guide = ❓ Инструкция
 btn-gateways-webhook-copy = 📋 Скопировать вебхук
 
 btn-gateway-active = { $is_active ->

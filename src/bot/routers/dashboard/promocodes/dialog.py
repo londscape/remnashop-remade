@@ -1,6 +1,7 @@
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.kbd import Button, Row, Start
 
+from src.bot.keyboards import main_menu_button
 from src.bot.states import Dashboard, DashboardPromocodes
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName
@@ -39,6 +40,7 @@ promocodes = Window(
             state=Dashboard.MAIN,
             mode=StartMode.RESET_STACK,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=DashboardPromocodes.MAIN,

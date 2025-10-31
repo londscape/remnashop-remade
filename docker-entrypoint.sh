@@ -1,9 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/sh
+
 set -e
 
 echo "Migrating database..."
 
-if ! uv run alembic -c src/infrastructure/database/alembic.ini upgrade head; then
+if ! alembic -c src/infrastructure/database/alembic.ini upgrade head; then
     echo "Database migration failed! Exiting container..."
     exit 1
 fi
@@ -18,4 +19,4 @@ else
   echo "Uvicorn will run without reload."
 fi
 
-exec uv run uvicorn src.__main__:application --host "${APP_HOST}" --port "${APP_PORT}" --factory --use-colors ${UVICORN_RELOAD_ARGS}
+exec uvicorn src.__main__:application --host "${APP_HOST}" --port "${APP_PORT}" --factory --use-colors ${UVICORN_RELOAD_ARGS}

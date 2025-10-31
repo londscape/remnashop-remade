@@ -64,3 +64,7 @@ class BaseUserDto(TrackableDto):
 
 class UserDto(BaseUserDto):
     current_subscription: Optional["BaseSubscriptionDto"] = None
+
+    @property
+    def has_subscription(self) -> bool:
+        return bool(self.current_subscription)

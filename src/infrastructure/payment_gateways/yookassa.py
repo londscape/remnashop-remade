@@ -87,9 +87,9 @@ class YookassaGateway(BasePaymentGateway):
         client_ip = request.headers.get("X-Forwarded-For", "")
         logger.critical(request.headers)
 
-        # if not self._is_ip_trusted(client_ip):
-        #     logger.warning(f"Webhook received from untrusted IP: {client_ip}")
-        #     raise PermissionError("IP address is not trusted")
+        if not self._is_ip_trusted(client_ip):
+            logger.warning(f"Webhook received from untrusted IP: {client_ip}")
+            raise PermissionError("IP address is not trusted")
 
         try:
             webhook_data = orjson.loads(await request.body())

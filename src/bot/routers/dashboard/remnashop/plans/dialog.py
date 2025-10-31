@@ -15,6 +15,7 @@ from aiogram_dialog.widgets.kbd import (
 from aiogram_dialog.widgets.text import Format
 from magic_filter import F
 
+from src.bot.keyboards import main_menu_button
 from src.bot.states import DashboardRemnashop, RemnashopPlans
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, Currency, PlanAvailability, PlanType
@@ -88,6 +89,7 @@ plans = Window(
             state=DashboardRemnashop.MAIN,
             mode=StartMode.RESET_STACK,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=RemnashopPlans.MAIN,

@@ -15,6 +15,7 @@ from src.infrastructure.taskiq.tasks.notifications import (
     send_access_denied_notification_task,
     send_access_opened_notifications_task,
 )
+from src.infrastructure.taskiq.tasks.redirects import redirect_to_main_menu_task
 from src.services.settings import SettingsService
 
 from .base import BaseService
@@ -67,6 +68,7 @@ class AccessService(BaseService):
                     logger.info(
                         f"{self.tag} Access denied for user '{user.telegram_id}' (purchase event)"
                     )
+                    await redirect_to_main_menu_task.kiq(user.telegram_id)
                     await send_access_denied_notification_task.kiq(
                         user=user,
                         i18n_key="ntf-access-denied-purchasing",

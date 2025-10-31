@@ -3,6 +3,7 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Column, Group, Row, Select, Start, SwitchTo
 from magic_filter import F
 
+from src.bot.keyboards import main_menu_button
 from src.bot.states import Dashboard, DashboardAccess
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import AccessMode, BannerName
@@ -37,6 +38,7 @@ access = Window(
             state=Dashboard.MAIN,
             mode=StartMode.RESET_STACK,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=DashboardAccess.MAIN,

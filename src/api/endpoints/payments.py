@@ -1,3 +1,7 @@
+import traceback
+import uuid
+
+from aiogram.utils.formatting import Text
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
 from fastapi import APIRouter, Request, Response, status
@@ -5,6 +9,7 @@ from loguru import logger
 
 from src.core.constants import API_V1, PAYMENTS_WEBHOOK_PATH
 from src.core.enums import PaymentGatewayType
+from src.infrastructure.taskiq.tasks.notifications import send_error_notification_task
 from src.infrastructure.taskiq.tasks.payments import handle_payment_transaction_task
 from src.services.payment_gateway import PaymentGatewayService
 
@@ -27,9 +32,22 @@ async def payments_webhook(
         return Response(status_code=status.HTTP_200_OK)
 
     except ValueError:
-        logger.error(f"[PAYMENTS] Invalid gateway type received: {gateway_type}")
+        logger.exception(f"[PAYMENTS] Invalid gateway type received: {gateway_type}")
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
     except Exception as exception:
-        logger.error(f"[PAYMENTS] Error processing webhook for {gateway_type}: {exception}")
-        return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.exception(f"[PAYMENTS] Error processing webhook for {gateway_type}: {exception}")
+        traceback_str = traceback.format_exc()
+        error_type_name = type(exception).__name__
+        error_message = Text(str(exception)[:512])
+
+        await send_error_notification_task.kiq(
+            error_id=str(uuid.uuid4()),
+            traceback_str=traceback_str,
+            i18n_kwargs={
+                "user": False,
+                "error": f"{error_type_name}: {error_message.as_html()}",
+            },
+        )
+
+    return Response(status_code=status.HTTP_200_OK)

@@ -15,4 +15,7 @@ class RemnawaveProvider(Provider):
         return RemnawaveSDK(
             base_url=config.remnawave.url.get_secret_value(),
             token=config.remnawave.token.get_secret_value(),
+            caddy_token=config.remnawave.caddy_token.get_secret_value(),
+            ssl_ignore=False,
+            custom_headers=None,
         )

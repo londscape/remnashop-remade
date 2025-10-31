@@ -5,14 +5,11 @@ from aiogram.fsm.state import State, StatesGroup
 
 class MainMenu(StatesGroup):
     MAIN = State()
+    DEVICES = State()
 
 
 class Notification(StatesGroup):
     CLOSE = State()
-
-
-class Connect(StatesGroup):
-    MAIN = State()
 
 
 class Subscription(StatesGroup):

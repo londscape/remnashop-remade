@@ -2,8 +2,7 @@ import asyncio
 from typing import Any, Union
 
 from aiogram.types import BufferedInputFile
-from dishka import FromDishka
-from dishka.integrations.taskiq import inject
+from dishka.integrations.taskiq import FromDishka, inject
 from loguru import logger
 from remnawave.models.webhook import UserDto as RemnaUserDto
 

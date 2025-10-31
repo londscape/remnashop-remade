@@ -2,6 +2,7 @@ from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.kbd import Button, Row, Start
 from magic_filter import F
 
+from src.bot.keyboards import back_main_menu_button
 from src.bot.states import (
     Dashboard,
     DashboardAccess,
@@ -10,7 +11,6 @@ from src.bot.states import (
     DashboardRemnashop,
     DashboardStatistics,
     DashboardUsers,
-    MainMenu,
 )
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName
@@ -69,14 +69,7 @@ dashboard = Window(
         ),
         when=F["middleware_data"]["user"].is_dev,
     ),
-    Row(
-        Start(
-            text=I18nFormat("btn-back-menu"),
-            id="back",
-            state=MainMenu.MAIN,
-            mode=StartMode.RESET_STACK,
-        ),
-    ),
+    *back_main_menu_button,
     IgnoreUpdate(),
     state=Dashboard.MAIN,
 )

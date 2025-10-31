@@ -3,6 +3,7 @@ from aiogram_dialog.widgets.kbd import Button, ListGroup, Row, Start, SwitchTo
 from aiogram_dialog.widgets.text import Format
 from magic_filter import F
 
+from src.bot.keyboards import main_menu_button
 from src.bot.routers.extra.test import show_dev_popup
 from src.bot.states import (
     Dashboard,
@@ -80,6 +81,7 @@ remnashop = Window(
             state=Dashboard.MAIN,
             mode=StartMode.RESET_STACK,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=DashboardRemnashop.MAIN,

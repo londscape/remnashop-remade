@@ -2,6 +2,7 @@ from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.kbd import Column, Row, Select, Start, SwitchTo
 from magic_filter import F
 
+from src.bot.keyboards import main_menu_button
 from src.bot.states import DashboardRemnashop, RemnashopNotifications
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, SystemNotificationType, UserNotificationType
@@ -32,6 +33,7 @@ notifications = Window(
             id="back",
             state=DashboardRemnashop.MAIN,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=RemnashopNotifications.MAIN,

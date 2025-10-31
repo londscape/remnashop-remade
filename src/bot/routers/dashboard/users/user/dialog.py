@@ -17,8 +17,9 @@ from aiogram_dialog.widgets.kbd import (
 from aiogram_dialog.widgets.text import Format
 from magic_filter import F
 
+from src.bot.keyboards import back_main_menu_button
 from src.bot.routers.dashboard.broadcast.handlers import on_content_input, on_preview
-from src.bot.states import Dashboard, DashboardUser
+from src.bot.states import DashboardUser, DashboardUsers
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, SubscriptionStatus, UserRole
 
@@ -118,10 +119,11 @@ user = Window(
         Start(
             text=I18nFormat("btn-back-dashboard"),
             id="back",
-            state=Dashboard.MAIN,
+            state=DashboardUsers.MAIN,
             mode=StartMode.RESET_STACK,
         ),
     ),
+    *back_main_menu_button,
     IgnoreUpdate(),
     state=DashboardUser.MAIN,
     getter=user_getter,

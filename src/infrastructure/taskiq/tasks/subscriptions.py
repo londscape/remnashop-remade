@@ -2,8 +2,7 @@ import traceback
 from typing import Optional, cast
 
 from aiogram.utils.formatting import Text
-from dishka import FromDishka
-from dishka.integrations.taskiq import inject
+from dishka.integrations.taskiq import FromDishka, inject
 from loguru import logger
 from remnawave.models.webhook import UserDto as RemnaUserDto
 
@@ -20,8 +19,12 @@ from src.core.utils.formatters import (
     i18n_format_device_limit,
     i18n_format_traffic_limit,
 )
-from src.infrastructure.database.models.dto import PlanSnapshotDto, SubscriptionDto, UserDto
-from src.infrastructure.database.models.dto.transaction import TransactionDto
+from src.infrastructure.database.models.dto import (
+    PlanSnapshotDto,
+    SubscriptionDto,
+    TransactionDto,
+    UserDto,
+)
 from src.infrastructure.taskiq.broker import broker
 from src.infrastructure.taskiq.tasks.notifications import (
     send_error_notification_task,
@@ -59,7 +62,7 @@ async def trial_subscription_task(
             device_limit=plan.device_limit,
             internal_squads=plan.internal_squads,
             expire_at=created_user.expire_at,
-            url=created_user.short_uuid,
+            url=created_user.subscription_url,
             plan=plan,
         )
         await subscription_service.create(user, trial_subscription)
@@ -137,7 +140,7 @@ async def purchase_subscription_task(
                 device_limit=plan.device_limit,
                 internal_squads=plan.internal_squads,
                 expire_at=created_user.expire_at,
-                url=created_user.short_uuid,
+                url=created_user.subscription_url,
                 plan=plan,
             )
             await subscription_service.create(user, new_subscription)
@@ -174,7 +177,7 @@ async def purchase_subscription_task(
                 device_limit=plan.device_limit,
                 internal_squads=plan.internal_squads,
                 expire_at=updated_user.expire_at,
-                url=updated_user.short_uuid,
+                url=updated_user.subscription_url,
                 plan=plan,
             )
             await subscription_service.create(user, new_subscription)
@@ -277,6 +280,7 @@ async def update_status_current_subscription_task(
 @inject
 async def sync_current_subscription_task(  # noqa: C901
     remna_user: RemnaUserDto,
+    remnawave_service: FromDishka[RemnawaveService],
     user_service: FromDishka[UserService],
     subscription_service: FromDishka[SubscriptionService],
 ) -> None:
@@ -300,6 +304,12 @@ async def sync_current_subscription_task(  # noqa: C901
         logger.debug(f"[TASK] No active subscription for user '{user.telegram_id}'")
         return
 
+    subscription_url = await remnawave_service.get_subscription_url(user)
+
+    if not subscription_url:
+        logger.warning(f"[TASK] User '{user.telegram_id}' has not subscription_url")
+        return
+
     device_limit = remna_user.hwid_device_limit or 0
     new_traffic_limit = format_bytes_to_gb(remna_user.traffic_limit_bytes)
     new_device_limit = format_device_count(device_limit)
@@ -313,8 +323,8 @@ async def sync_current_subscription_task(  # noqa: C901
         changes["status"] = (subscription.status, remna_user.status)
     if subscription.expire_at != remna_user.expire_at:
         changes["expire_at"] = (subscription.expire_at, remna_user.expire_at)
-    if subscription.url != remna_user.short_uuid:
-        changes["url"] = (subscription.url, remna_user.short_uuid)
+    if subscription.url != subscription_url:
+        changes["url"] = (subscription.url, subscription_url)
     if subscription.traffic_limit != new_traffic_limit:
         changes["traffic_limit"] = (subscription.traffic_limit, new_traffic_limit)
     if subscription.device_limit != new_device_limit:
@@ -338,7 +348,7 @@ async def sync_current_subscription_task(  # noqa: C901
     subscription.device_limit = new_device_limit
     subscription.internal_squads = new_internal_squads
     subscription.expire_at = remna_user.expire_at
-    subscription.url = remna_user.short_uuid
+    subscription.url = subscription_url
 
     await subscription_service.update(subscription)
     logger.info(f"[TASK] Subscription for '{remna_user.telegram_id}' successfully synchronized")

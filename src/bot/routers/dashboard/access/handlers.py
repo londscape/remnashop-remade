@@ -13,6 +13,7 @@ from src.core.enums import AccessMode
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.core.utils.validators import is_valid_url, is_valid_username
+from src.infrastructure.database.models.dto import UserDto
 from src.services.access import AccessService
 from src.services.notification import NotificationService
 from src.services.settings import SettingsService
@@ -26,7 +27,7 @@ async def on_access_mode_select(
     selected_mode: AccessMode,
     access_service: FromDishka[AccessService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     logger.info(f"{log(user)} Set access mode -> '{selected_mode}'")
     await access_service.set_mode(mode=selected_mode)
@@ -39,7 +40,7 @@ async def on_condition_toggle(
     dialog_manager: DialogManager,
     settings_service: FromDishka[SettingsService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     settings = await settings_service.get()
 
     if callback.data == "rules":
@@ -63,7 +64,7 @@ async def on_rules_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set rules link")
     input_text: str = message.text.strip() if message.text else ""
 
@@ -96,7 +97,7 @@ async def on_channel_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set channel link")
     input_text: str = message.text.strip() if message.text else ""
 

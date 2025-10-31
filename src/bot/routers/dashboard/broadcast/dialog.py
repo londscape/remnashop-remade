@@ -14,6 +14,7 @@ from aiogram_dialog.widgets.kbd import (
 )
 from magic_filter import F
 
+from src.bot.keyboards import main_menu_button
 from src.bot.states import Dashboard, DashboardBroadcast
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, BroadcastAudience, BroadcastStatus
@@ -85,6 +86,7 @@ broadcast = Window(
             state=Dashboard.MAIN,
             mode=StartMode.RESET_STACK,
         ),
+        *main_menu_button,
     ),
     IgnoreUpdate(),
     state=DashboardBroadcast.MAIN,
@@ -273,7 +275,7 @@ buttons = Window(
             Button(
                 text=I18nFormat("btn-broadcast-button-select", selected=F["item"]["selected"]),
                 id="select_button",
-                on_click=on_button_select,  # type: ignore[arg-type]
+                on_click=on_button_select,
             ),
         ),
         id="button_list",

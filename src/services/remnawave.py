@@ -19,7 +19,6 @@ from remnawave.models.webhook import (
 )
 from remnawave.models.webhook import NodeDto as RemnaNodeDto
 from remnawave.models.webhook import UserDto as RemnaUserDto
-from remnawave.models.webhook import UserHwidDeviceEventDto
 
 from src.core.config import AppConfig
 from src.core.constants import DATETIME_FORMAT, REMNASHOP_PREFIX
@@ -42,8 +41,7 @@ from src.core.utils.formatters import (
     i18n_format_expire_time,
     i18n_format_traffic_limit,
 )
-from src.infrastructure.database.models.dto import PlanSnapshotDto, UserDto
-from src.infrastructure.database.models.dto.subscription import SubscriptionDto
+from src.infrastructure.database.models.dto import PlanSnapshotDto, SubscriptionDto, UserDto
 from src.infrastructure.redis import RedisRepository
 from src.infrastructure.taskiq.tasks.notifications import (
     send_subscription_expire_notification_task,
@@ -105,7 +103,8 @@ class RemnawaveService(BaseService):
                 # tag=,
                 telegram_id=user.telegram_id,
                 hwidDeviceLimit=format_device_count(plan.device_limit),
-                active_internal_squads=[str(uid) for uid in plan.internal_squads],
+                active_internal_squads=plan.internal_squads,
+                # external_squad_uuid=,
             )
         )
 
@@ -149,13 +148,16 @@ class RemnawaveService(BaseService):
         updated_user = await self.remnawave.users.update_user(
             UpdateUserRequestDto(
                 uuid=uuid,
-                active_internal_squads=[str(uid) for uid in internal_squads],
+                active_internal_squads=internal_squads,
+                # external_squad_uuid=,
                 description=user.remna_description,
+                # tag=,
                 expire_at=expire_at,
                 hwidDeviceLimit=format_device_count(device_limit),
                 status=status,
                 telegram_id=user.telegram_id,
                 traffic_limit_bytes=format_gb_to_bytes(traffic_limit),
+                # traffic_limit_strategy=,
             )
         )
 
@@ -241,6 +243,14 @@ class RemnawaveService(BaseService):
 
         logger.info(f"{self.tag} Remnawave user '{user.remna_name}' fetched successfully")
         return remna_user
+
+    async def get_subscription_url(self, user: UserDto) -> Optional[str]:
+        remna_user = await self.get_user(user)
+
+        if remna_user is None:
+            return None
+
+        return remna_user.subscription_url
 
     #
 

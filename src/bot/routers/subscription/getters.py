@@ -5,6 +5,7 @@ from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 from fluentogram import TranslatorRunner
 
+from src.core.config.app import AppConfig
 from src.core.enums import PurchaseType
 from src.core.utils.adapter import DialogDataAdapter
 from src.core.utils.formatters import (
@@ -201,8 +202,29 @@ async def confirm_getter(
 
 
 @inject
+async def getter_connect(
+    dialog_manager: DialogManager,
+    config: AppConfig,
+    user: UserDto,
+    subscription_service: FromDishka[SubscriptionService],
+    **kwargs: Any,
+) -> dict[str, Any]:
+    subscription = await subscription_service.get_current(user.telegram_id)
+
+    if not subscription:
+        raise ValueError(f"User '{user.telegram_id}' has no active subscription after purchase")
+
+    return {
+        "miniapp_url": config.bot.mini_app_url.get_secret_value(),
+        "subscription_url": subscription.url,
+        "connetable": True,
+    }
+
+
+@inject
 async def success_payment_getter(
     dialog_manager: DialogManager,
+    config: AppConfig,
     user: UserDto,
     subscription_service: FromDishka[SubscriptionService],
     **kwargs: Any,
@@ -221,4 +243,7 @@ async def success_payment_getter(
         "device_limit": i18n_format_device_limit(subscription.device_limit),
         "expire_time": i18n_format_expire_time(subscription.expire_at),
         "added_duration": i18n_format_days(subscription.plan.duration),
+        "miniapp_url": config.bot.mini_app_url.get_secret_value(),
+        "subscription_url": subscription.url,
+        "connetable": True,
     }

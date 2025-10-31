@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
 
@@ -78,12 +79,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         """  # noqa: W605
     )
 
+    await send_remnashop_notification_task.kiq()
+    await asyncio.sleep(2)
     await send_system_notification_task.kiq(
         ntf_type=SystemNotificationType.BOT_LIFETIME,
         i18n_key="ntf-event-bot-startup",
         i18n_kwargs={"access_mode": access_mode},
     )
-    await send_remnashop_notification_task.kiq()
 
     yield
 

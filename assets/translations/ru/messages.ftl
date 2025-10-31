@@ -33,6 +33,13 @@ msg-main-menu =
     </blockquote>
     }
 
+msg-menu-devices =
+    <b>📱 Мои устройства</b>
+
+    Здесь вы можете удалить привязанные устройства.
+    
+    <i>Чтобы увеличить или уменьшить лимит вам нужно изменить подписку и выбрать нужное кол-во устройств.</i>
+
 
 # Dashboard
 msg-dashboard-main = <b>🛠 Панель управления</b>
@@ -49,20 +56,14 @@ msg-statistics-users =
     • <b>Новые за день</b>: { $new_users_daily }
     • <b>Новые за неделю</b>: { $new_users_weekly }
     • <b>Новые за месяц</b>: { $new_users_monthly }
-    </blockquote>
 
-    <blockquote>
     • <b>С подпиской</b>: { $users_with_subscription }
     • <b>Без подписки</b>: { $users_without_subscription }
     • <b>С пробным периодом</b>: { $users_with_trial }
-    </blockquote>
 
-    <blockquote>
     • <b>Заблокированные</b>: { $blocked_users }
     • <b>Заблокировали бота</b>: { $bot_blocked_users }
-    </blockquote>
 
-    <blockquote>
     • <b>Конверсия пользователей → покупка</b>: { $user_conversion }%
     • <b>Конверсия пробников → подписка</b>: { $trial_conversion }%
     </blockquote>
@@ -74,9 +75,9 @@ msg-statistics-transactions =
     • <b>Всего транзакций</b>: { $total_transactions }
     • <b>Завершенных транзакций</b>: { $completed_transactions }
     • <b>Бесплатных транзакций</b>: { $free_transactions }
-    • <b>Популярная платежная система</b>: { $popular_gateway ->
-    [0] { unknown }
-    *[HAS] { $popular_gateway }
+    { $popular_gateway ->
+    [0] { space }
+    *[HAS] • <b>Популярная платежная система</b>: { $popular_gateway }
     }
     </blockquote>
 
@@ -101,15 +102,6 @@ msg-statistics-subscriptions =
 msg-statistics-plans = 
     <b>📦 Статистика по планам</b>
 
-    { $popular_plan -> 
-    [0] { unknown }
-    *[HAS]
-
-    <blockquote>
-    • <b>Популярный план</b>: { $popular_plan }
-    </blockquote>
-    }
-    
     { $plans }
 
 msg-statistics-promocodes =
@@ -147,7 +139,10 @@ msg-statistics-transactions-gateway =
     </blockquote>
 
 msg-statistics-plan =
-    <b>{ $plan_name }:</b>
+    <b>{ $plan_name }:</b> { $popular -> 
+    [0] { space }
+    *[HAS] (⭐)
+    }
     <blockquote>
     • <b>Всего подписок</b>: { $total_subscriptions }
     • <b>Активных подписок</b>: { $active_subscriptions }
@@ -562,7 +557,7 @@ msg-notifications-system = <b>⚙️ Системные уведомления</
 # Subscription
 msg-subscription-main = <b>💳 Подписка</b>
 msg-subscription-plans = <b>📦 Выберите план</b>
-msg-subscription-new-success = Чтобы начать пользоваться нашим сервисом, нажмите кнопку <code>`🔌 Подключиться`</code> и следуйте инструкциям!
+msg-subscription-new-success = Чтобы начать пользоваться нашим сервисом, нажмите кнопку <code>`{ btn-subscription-connect }`</code> и следуйте инструкциям!
 msg-subscription-renew-success = Ваша подписка продлена на { $added_duration }.
 
 msg-subscription-details =

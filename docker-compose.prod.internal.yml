@@ -12,10 +12,7 @@ services:
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_DB=${DATABASE_NAME}
       - TZ=UTC
-
-    ports:
-      - "5432:5432"
-      
+    
     volumes:
       - remnashop-db-data:/var/lib/postgresql/data
 
@@ -53,9 +50,9 @@ services:
   remnashop:
     &remnashop
     build:
-      context: .
-      dockerfile: Dockerfile.local
-    container_name: "remnashop-local"
+      context: . #TODO: image
+      dockerfile: Dockerfile
+    container_name: "remnashop"
     hostname: remnashop
     restart: unless-stopped
 
@@ -92,10 +89,10 @@ services:
 
 
 networks:
-  remnashop-network:
-    name: remnashop-network
-    driver: bridge
-    external: false
+  remnawave-network:
+    name: remnawave-network 
+    driver: bridge 
+    external: true
 
 volumes:
   remnashop-db-data:

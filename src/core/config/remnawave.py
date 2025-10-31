@@ -10,15 +10,23 @@ from .validators import validate_not_change_me
 
 
 class RemnawaveConfig(BaseConfig, env_prefix="REMNAWAVE_"):
-    # TODO: Ensure connection to the panel within a single Docker network
     host: SecretStr
     token: SecretStr
+    caddy_token: SecretStr
     webhook_secret: SecretStr
 
     @property
+    def is_external(self) -> bool:
+        return self.host.get_secret_value() != "remnawave"
+
+    @property
     def url(self) -> SecretStr:
-        url = f"https://{self.host.get_secret_value()}"
-        return SecretStr(url)
+        if self.is_external:
+            url = f"https://{self.host.get_secret_value()}"
+            return SecretStr(url)
+        else:
+            url = f"http://{self.host.get_secret_value()}:3000"
+            return SecretStr(url)
 
     @field_validator("host")
     @classmethod

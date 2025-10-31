@@ -83,7 +83,7 @@ async def on_name_input(
     plan_service: FromDishka[PlanService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set plan name")
 
     if message.text is None:
@@ -121,7 +121,7 @@ async def on_type_select(
     dialog_manager: DialogManager,
     selected_type: PlanType,
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Selected plan type '{selected_type}'")
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
@@ -152,7 +152,7 @@ async def on_availability_select(
     dialog_manager: DialogManager,
     selected_availability: PlanAvailability,
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
 
@@ -173,7 +173,7 @@ async def on_active_toggle(
     widget: Button,
     dialog_manager: DialogManager,
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
 
@@ -195,7 +195,7 @@ async def on_traffic_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set plan traffic limit")
 
     if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
@@ -228,7 +228,7 @@ async def on_devices_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set plan device limit")
 
     if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
@@ -303,7 +303,7 @@ async def on_duration_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to add new plan duration")
 
     if message.text is None or not (
@@ -355,7 +355,7 @@ async def on_currency_select(
     dialog_manager: DialogManager,
     selected_currency: Currency,
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Selected currency '{selected_currency}'")
     dialog_manager.dialog_data["selected_currency"] = selected_currency.value
     await dialog_manager.switch_to(state=RemnashopPlans.PRICE)
@@ -370,7 +370,7 @@ async def on_price_input(
     pricing_service: FromDishka[PricingService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set plan price")
 
     if message.text is None:
@@ -428,7 +428,7 @@ async def on_allowed_user_input(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.debug(f"{log(user)} Attempted to set allowed id for plan")
 
     if message.text is None or not message.text.isdigit():
@@ -496,7 +496,7 @@ async def on_squad_select(
     dialog_manager: DialogManager,
     selected_squad: UUID,
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
@@ -522,7 +522,7 @@ async def on_confirm_plan(  # noqa: C901
     notification_service: FromDishka[NotificationService],
     plan_service: FromDishka[PlanService],
 ) -> None:
-    user = dialog_manager.middleware_data[USER_KEY]
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     logger.debug(f"{log(user)} Attempted to confirm plan")
 
