@@ -339,7 +339,7 @@ class UserService(BaseService):
             list_cache_keys_to_invalidate.append(key)
 
         await self.redis_client.delete(*list_cache_keys_to_invalidate)
-        logger.debug(f"List caches invalidated")
+        logger.debug("List caches invalidated")
 
     async def _add_to_recent_list(self, key: StorageKey, telegram_id: int) -> None:
         await self.redis_repository.list_remove(key, value=telegram_id, count=0)

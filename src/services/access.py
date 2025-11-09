@@ -175,7 +175,7 @@ class AccessService(BaseService):
 
     async def clear_all_waiting_users(self) -> None:
         await self.redis_repository.delete(key=AccessWaitListKey())
-        logger.info(f"Access waitlist completely cleared")
+        logger.info("Access waitlist completely cleared")
 
     async def _can_add_to_waitlist(self, telegram_id: int) -> bool:
         is_member = await self.redis_repository.collection_is_member(

@@ -120,7 +120,7 @@ class PlanService(BaseService):
             else:
                 logger.warning(f"Trial plan '{db_plans[0].name}' found but is not active")
 
-        logger.debug(f"No active trial plan found")
+        logger.debug("No active trial plan found")
         return None
 
     async def get_available_plans(self, user_dto: UserDto, is_new_user: bool) -> list[PlanDto]:

@@ -26,7 +26,7 @@ class WebhookService(BaseService):
         webhook_hash: str = get_webhook_hash(webhook_data)
 
         if await self._is_set(bot_id=self.bot.id, webhook_hash=webhook_hash):
-            logger.info(f"Bot webhook setup skipped, already configured")
+            logger.info("Bot webhook setup skipped, already configured")
             logger.debug(f"Current webhook URL: '{safe_webhook_url}'")
             return await self.bot.get_webhook_info()
 
@@ -36,21 +36,21 @@ class WebhookService(BaseService):
         await self._clear(bot_id=self.bot.id)
         await self._set(bot_id=self.bot.id, webhook_hash=webhook_hash)
 
-        logger.success(f"Bot webhook set successfully")
+        logger.success("Bot webhook set successfully")
         logger.debug(f"Webhook URL: '{safe_webhook_url}'")
 
         return await self.bot.get_webhook_info()
 
     async def delete(self) -> None:
         if not self.config.bot.reset_webhook:
-            logger.debug(f"Bot webhook reset is disabled")
+            logger.debug("Bot webhook reset is disabled")
             return
 
         if await self.bot.delete_webhook():
-            logger.info(f"Bot webhook deleted successfully")
+            logger.info("Bot webhook deleted successfully")
             await self._clear(bot_id=self.bot.id)
         else:
-            logger.error(f"Failed to delete bot webhook")
+            logger.error("Failed to delete bot webhook")
 
     def has_error(self, webhook_info: WebhookInfo) -> bool:
         if not webhook_info.last_error_message or webhook_info.last_error_date is None:

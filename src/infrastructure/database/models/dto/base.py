@@ -1,6 +1,5 @@
 from typing import Any, Iterable, Optional, Type, TypeVar
 
-from loguru import logger
 from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict, PrivateAttr, SecretStr
 

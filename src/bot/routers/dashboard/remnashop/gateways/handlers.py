@@ -61,6 +61,14 @@ async def on_gateway_test(
     if not gateway:
         raise ValueError(f"Attempted to test non-existent gateway '{gateway_id}'")
 
+    if gateway.settings and not gateway.settings.is_configure:
+        logger.warning(f"{log(user)} Gateway '{gateway_id}' is not configured")
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(i18n_key="ntf-gateway-not-configured"),
+        )
+        return
+
     logger.info(f"{log(user)} Testing gateway '{gateway_id}'")
 
     try:

@@ -1,7 +1,6 @@
 from typing import Any, Optional
 from uuid import UUID
 
-from src.core.enums import BroadcastStatus
 from src.infrastructure.database.models.sql import Broadcast, BroadcastMessage
 
 from .base import BaseRepository

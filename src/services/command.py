@@ -11,7 +11,7 @@ from .base import BaseService
 class CommandService(BaseService):
     async def setup(self) -> None:
         if not self.config.bot.setup_commands:
-            logger.debug(f"Bot commands setup is disabled")
+            logger.debug("Bot commands setup is disabled")
             return
 
         locales_to_set: list[Optional[Locale]] = list(self.config.locales) + [None]

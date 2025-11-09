@@ -16,7 +16,7 @@ class PricingService(BaseService):
         )
 
         if price <= 0:
-            logger.debug(f"Price is zero, returning without discount")
+            logger.debug("Price is zero, returning without discount")
             return PriceDetailsDto(
                 original_amount=Decimal(0),
                 final_amount=Decimal(0),

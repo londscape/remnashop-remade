@@ -44,7 +44,7 @@ async def plans_getter(
     plan_service: FromDishka[PlanService],
     **kwargs: Any,
 ) -> dict[str, Any]:
-    is_new_user = await subscription_service.has_any_subscription(user)
+    is_new_user = not await subscription_service.has_any_subscription(user)
     plans = await plan_service.get_available_plans(user, is_new_user)
 
     formatted_plans = [

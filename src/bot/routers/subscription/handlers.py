@@ -123,7 +123,7 @@ async def on_purchase_type_select(
     notification_service: FromDishka[NotificationService],
 ) -> None:
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-    is_new_user = await subscription_service.has_any_subscription(user)
+    is_new_user = not await subscription_service.has_any_subscription(user)
     plans: list[PlanDto] = await plan_service.get_available_plans(user, is_new_user)
     gateways = await payment_gateway_service.filter_active()
     dialog_manager.dialog_data["purchase_type"] = purchase_type
@@ -190,7 +190,7 @@ async def on_subscription_plans(  # noqa: C901
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
     logger.info(f"{log(user)} Opened subscription plans menu")
 
-    is_new_user = await subscription_service.has_any_subscription(user)
+    is_new_user = not await subscription_service.has_any_subscription(user)
     plans: list[PlanDto] = await plan_service.get_available_plans(user, is_new_user)
     gateways = await payment_gateway_service.filter_active()
 
