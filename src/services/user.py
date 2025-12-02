@@ -104,7 +104,7 @@ class UserService(BaseService):
     async def update(self, user: UserDto) -> Optional[UserDto]:
         db_updated_user = await self.uow.repository.users.update(
             telegram_id=user.telegram_id,
-            **user.changed_data,
+            **user.prepare_changed_data(),
         )
 
         if db_updated_user:
@@ -151,7 +151,7 @@ class UserService(BaseService):
                 )
                 user.language = self.config.default_locale
 
-        if not user.changed_data:
+        if not user.prepare_changed_data():
             return None
 
         return await self.update(user)
@@ -204,7 +204,7 @@ class UserService(BaseService):
         user.is_blocked = blocked
         await self.uow.repository.users.update(
             user.telegram_id,
-            **user.changed_data,
+            **user.prepare_changed_data(),
         )
         await self.clear_user_cache(user.telegram_id)
         logger.info(f"Set block={blocked} for user '{user.telegram_id}'")
@@ -213,7 +213,7 @@ class UserService(BaseService):
         user.is_bot_blocked = blocked
         await self.uow.repository.users.update(
             user.telegram_id,
-            **user.changed_data,
+            **user.prepare_changed_data(),
         )
         await self.clear_user_cache(user.telegram_id)
         logger.info(f"Set bot_blocked={blocked} for user '{user.telegram_id}'")
@@ -222,7 +222,7 @@ class UserService(BaseService):
         user.role = role
         await self.uow.repository.users.update(
             user.telegram_id,
-            **user.changed_data,
+            **user.prepare_changed_data(),
         )
         await self.clear_user_cache(user.telegram_id)
         logger.info(f"Set role='{role.name}' for user '{user.telegram_id}'")
