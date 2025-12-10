@@ -34,6 +34,7 @@ async def system_getter(
         raise ValueError("Wrong response from Remnawave")
 
     return {
+        "version": "",  # TODO: Добавить версию панели
         "cpu_cores": response.cpu.physical_cores,
         "cpu_threads": response.cpu.cores,
         "ram_used": i18n_format_bytes_to_unit(response.memory.active),
@@ -59,10 +60,10 @@ async def users_getter(
 
     return {
         "users_total": str(response.users.total_users),
-        "users_active": str(response.users.status_counts.active),
-        "users_disabled": str(response.users.status_counts.disabled),
-        "users_limited": str(response.users.status_counts.limited),
-        "users_expired": str(response.users.status_counts.expired),
+        "users_active": str(response.users.status_counts.get("ACTIVE")),
+        "users_disabled": str(response.users.status_counts.get("DISABLED")),
+        "users_limited": str(response.users.status_counts.get("LIMITED")),
+        "users_expired": str(response.users.status_counts.get("EXPIRED")),
         "online_last_day": str(response.online_stats.last_day),
         "online_last_week": str(response.online_stats.last_week),
         "online_never": str(response.online_stats.never_online),
@@ -127,7 +128,7 @@ async def nodes_getter(
     if not isinstance(response, GetAllNodesResponseDto):
         raise ValueError("Wrong response from Remnawave")
 
-    for node in response.root:
+    for node in response:
         kwargs_for_i18n = {
             "xray_uptime": i18n_format_seconds(node.xray_uptime),
             "traffic_used": i18n_format_bytes_to_unit(node.traffic_used_bytes),

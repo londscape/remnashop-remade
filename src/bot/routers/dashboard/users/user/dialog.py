@@ -330,11 +330,10 @@ squads = Window(
         ),
     ),
     Row(
-        Button(
+        SwitchTo(
             text=I18nFormat("btn-user-subscription-external-squads"),
             id="external",
-            # state=DashboardUser.EXTERNAL_SQUADS,
-            on_click=show_dev_popup,
+            state=DashboardUser.EXTERNAL_SQUADS,
         ),
     ),
     Row(

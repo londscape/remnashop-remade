@@ -4,10 +4,21 @@ from aiogram_dialog import DialogManager
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
+from src.__version__ import __version__
 from src.core.config import AppConfig
 from src.core.enums import UserRole
 from src.infrastructure.database.models.dto import UserDto
 from src.services.user import UserService
+
+
+async def remnashop_getter(
+    dialog_manager: DialogManager,
+    config: AppConfig,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    return {
+        "version": __version__,
+    }
 
 
 @inject

@@ -25,7 +25,10 @@ class WebhookService(BaseService):
         webhook_data = webhook.model_dump(exclude_unset=True)
         webhook_hash: str = get_webhook_hash(webhook_data)
 
-        if await self._is_set(bot_id=self.bot.id, webhook_hash=webhook_hash):
+        if (
+            await self._is_set(bot_id=self.bot.id, webhook_hash=webhook_hash)
+            and not self.config.bot.reset_webhook
+        ):
             logger.info("Bot webhook setup skipped, already configured")
             logger.debug(f"Current webhook URL: '{safe_webhook_url}'")
             return await self.bot.get_webhook_info()

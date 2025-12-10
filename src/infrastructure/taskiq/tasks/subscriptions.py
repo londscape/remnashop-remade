@@ -19,6 +19,7 @@ from src.core.utils.formatters import (
     i18n_format_traffic_limit,
 )
 from src.core.utils.message_payload import MessagePayload
+from src.core.utils.types import RemnaUserDto
 from src.infrastructure.database.models.dto import (
     PlanSnapshotDto,
     SubscriptionDto,
@@ -166,7 +167,7 @@ async def purchase_subscription_task(
                 subscription=subscription,
             )
 
-            subscription.expire_at = updated_user.expire_at  # type: ignore[assignment]
+            subscription.expire_at = updated_user.expire_at
             subscription.plan = plan
             await subscription_service.update(subscription)
             logger.debug(f"Renewed subscription for user '{user.telegram_id}'")
@@ -237,22 +238,30 @@ async def purchase_subscription_task(
 @broker.task
 @inject
 async def delete_current_subscription_task(
-    user_telegram_id: int,
+    remna_user: RemnaUserDto,
     user_service: FromDishka[UserService],
     subscription_service: FromDishka[SubscriptionService],
 ) -> None:
-    logger.info(f"Delete current subscription started for user '{user_telegram_id}'")
+    logger.info(f"Delete current subscription started for user '{remna_user.telegram_id}'")
 
-    user = await user_service.get(user_telegram_id)
+    if not remna_user.telegram_id:
+        logger.debug(f"Skipping RemnaUser '{remna_user.username}': telegram_id is empty")
+        return
+
+    user = await user_service.get(remna_user.telegram_id)
 
     if not user:
-        logger.debug(f"User '{user_telegram_id}' not found, skipping deletion")
+        logger.debug(f"User '{remna_user.telegram_id}' not found, skipping deletion")
         return
 
     subscription = await subscription_service.get_current(user.telegram_id)
 
     if not subscription:
         logger.debug(f"No current subscription for user '{user.telegram_id}', skipping deletion")
+        return
+
+    if subscription.user_remna_id != remna_user.uuid:
+        logger.debug(f"Subscription user UUID differs for '{user.telegram_id}', skipping deletion")
         return
 
     subscription.status = SubscriptionStatus.DELETED

@@ -1004,9 +1004,9 @@ async def on_sync_from_remnashop(
             created_user = await remnawave_service.create_user(
                 user=target_user,
                 subscription=subscription,
+                force=True,
             )
-
-        await remnawave_service.sync_user(created_user, creating=False)
+            await remnawave_service.sync_user(created_user, creating=False)
 
     await notification_service.notify_user(
         user=user,
@@ -1097,7 +1097,7 @@ async def on_subscription_duration_select(
     subscription_url = remna_user.subscription_url
 
     if not subscription_url:
-        subscription_url = await remnawave_service.get_subscription_url(remna_user.uuid)
+        subscription_url = await remnawave_service.get_subscription_url(remna_user.uuid)  # type: ignore[assignment]
 
     new_subscription = SubscriptionDto(
         user_remna_id=remna_user.uuid,

@@ -208,7 +208,8 @@ class SubscriptionService(BaseService):
             return False
 
         return (
-            bot_subscription.status == remna_subscription.status
+            bot_subscription.user_remna_id == remna_subscription.uuid
+            and bot_subscription.status == remna_subscription.status
             and bot_subscription.url == remna_subscription.url
             and bot_subscription.traffic_limit == remna_subscription.traffic_limit
             and bot_subscription.device_limit == remna_subscription.device_limit
@@ -256,6 +257,7 @@ class SubscriptionService(BaseService):
             old_value = getattr(target, field)
             new_value = getattr(source, field)
             if old_value != new_value:
+                logger.debug(f"Field '{field}' changed from '{old_value}' to '{new_value}'")
                 setattr(target, field, new_value)
 
         return target

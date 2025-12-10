@@ -945,7 +945,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = "~=2.11.0" },
     { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
     { name = "redis", specifier = "~=6.4.0" },
-    { name = "remnawave", specifier = ">=2.2.6" },
+    { name = "remnawave", specifier = ">=2.3.2" },
     { name = "sqlalchemy", extras = ["mypy"], specifier = ">=2.0.0" },
     { name = "taskiq", specifier = "~=0.11.19" },
     { name = "taskiq-redis", specifier = "~=1.1.2" },
@@ -964,18 +964,19 @@ dev = [
 
 [[package]]
 name = "remnawave"
-version = "2.2.6"
+version = "2.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "cryptography" },
     { name = "httpx" },
     { name = "orjson" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-core" },
     { name = "rapid-api-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d3/4a/7dc9ce30c30887e975da9a5feb61aebe80a16d1031fe7d3b427fb10ca7d3/remnawave-2.2.6.tar.gz", hash = "sha256:f7b02886678b8f417b994529822fbf5740bf2418820905ed66c3fa09c163a976", size = 45409, upload-time = "2025-11-11T23:18:38.937Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b1/04/88d3b28b8529e4971d18e8ae68afe444508b97cd42842cb4af98e1944dae/remnawave-2.3.2.tar.gz", hash = "sha256:42f896a30f5046d5f22e8a466d107a962538b32b224672aabed80d9065f6ed88", size = 49728, upload-time = "2025-12-10T04:40:21.799Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/f4/94dbf7cc509b5a4c80419f8331678bcac01923cdef10de850da793518f80/remnawave-2.2.6-py3-none-any.whl", hash = "sha256:043b758d2858ac60d0f4e3fe3431e1ed288b740830c998b67bac15b33c7a7ad7", size = 73305, upload-time = "2025-11-11T23:18:37.449Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/07/fc3b76ba657688c0b5d989e473b22a3addbf69f3487e863830ef6c2528b6/remnawave-2.3.2-py3-none-any.whl", hash = "sha256:d636d3fd9a810464faf4205caa78b41e2bbda04d83090ca0ee613af50ab2959f", size = 78320, upload-time = "2025-12-10T04:40:20.154Z" },
 ]
 
 [[package]]

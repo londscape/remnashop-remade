@@ -8,6 +8,8 @@ from remnawave import RemnawaveSDK
 from remnawave.exceptions import NotFoundError
 from remnawave.models import (
     GetAllInternalSquadsResponseDto,
+    GetExternalSquadsResponseDto,
+    GetOneNodeResponseDto,
     TelegramUserResponseDto,
 )
 
@@ -93,6 +95,7 @@ async def subscription_getter(
     user_service: FromDishka[UserService],
     subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
+    remnawave: FromDishka[RemnawaveSDK],
     **kwargs: Any,
 ) -> dict[str, Any]:
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
@@ -116,6 +119,12 @@ async def subscription_getter(
         if remna_user.active_internal_squads
         else False
     )
+
+    last_node: Optional[GetOneNodeResponseDto] = None
+    if remna_user.last_connected_node_uuid:
+        result = await remnawave.nodes.get_one_node(str(remna_user.last_connected_node_uuid))
+        assert isinstance(result, GetOneNodeResponseDto), "Wrong response from Remnawave"
+        last_node = result
 
     return {
         "is_trial": subscription.is_trial,
@@ -145,13 +154,11 @@ async def subscription_getter(
             else False
         ),
         "last_connected_at": (
-            remna_user.last_connected_node.connected_at.strftime(DATETIME_FORMAT)
-            if remna_user.last_connected_node
+            remna_user.first_connected.strftime(DATETIME_FORMAT)
+            if remna_user.first_connected
             else False
         ),
-        "node_name": (
-            remna_user.last_connected_node.node_name if remna_user.last_connected_node else False
-        ),
+        "node_name": last_node.name if last_node else False,
         #
         "plan_name": subscription.plan.name,
         "plan_type": subscription.plan.type,
@@ -279,18 +286,18 @@ async def squads_getter(
         internal_dict.get(squad, str(squad)) for squad in subscription.internal_squads
     )
 
-    # external_response = await remnawave.external_squads.get_external_squads()
-    # if not isinstance(external_response, GetExternalSquadsResponseDto):
-    #     raise ValueError("Wrong response from Remnawave external squads")
+    external_response = await remnawave.external_squads.get_external_squads()
+    if not isinstance(external_response, GetExternalSquadsResponseDto):
+        raise ValueError("Wrong response from Remnawave external squads")
 
-    # external_dict = {s.uuid: s.name for s in external_response.external_squads}
-    # external_squad_name = (
-    #     external_dict.get(subscription.external_squad) if subscription.external_squad else False
-    # )
+    external_dict = {s.uuid: s.name for s in external_response.external_squads}
+    external_squad_name = (
+        external_dict.get(subscription.external_squad) if subscription.external_squad else False
+    )
 
     return {
         "internal_squads": internal_squads_names or False,
-        "external_squad": False,  # external_squad_name,
+        "external_squad": external_squad_name or False,
     }
 
 
@@ -546,7 +553,7 @@ async def role_getter(
 
 
 @inject
-async def sync_getter(
+async def sync_getter(  # noqa: C901
     dialog_manager: DialogManager,
     i18n: FromDishka[TranslatorRunner],
     user_service: FromDishka[UserService],
@@ -592,6 +599,7 @@ async def sync_getter(
             internal_dict.get(squad, str(squad)) for squad in bot_subscription.internal_squads
         )
         bot_kwargs = {
+            "id": str(bot_subscription.user_remna_id),
             "status": bot_subscription.status,
             "url": bot_subscription.url,
             "traffic_limit": i18n_format_traffic_limit(bot_subscription.traffic_limit),
@@ -613,6 +621,7 @@ async def sync_getter(
             internal_dict.get(squad, str(squad)) for squad in remna_subscription.internal_squads
         )
         remna_kwargs = {
+            "id": str(remna_subscription.uuid),
             "status": remna_subscription.status,
             "url": remna_subscription.url,
             "traffic_limit": i18n_format_traffic_limit(remna_subscription.traffic_limit),

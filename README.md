@@ -80,7 +80,7 @@
 
     > Referral system configurator.
     
-    > Reward customization: money, extra days, or automatically generated promocodes.
+    > Reward customization: points or extra days.
 
     > Two-level referral support.
 
@@ -163,15 +163,29 @@
 - **🧭 Migration**
     > Seamless migration from other bots.
   
-- **🪄 MiniApp Support (maposia)**
+- **🪄 MiniApp Subscription Page Support**
 
 
 # ⚙️ Installation and configuration
 
-Install Docker if not installed yet.
-```
-sudo curl -fsSL https://get.docker.com | sh
-```
+## Requirements
+- Hardware:
+    - OS: Recommended Ubuntu or Debian
+    - RAM: Minimum 2 GB, recommended 4 GB
+    - CPU: Minimum 2 cores, recommended 4 cores
+    - Storage: 20 GB, minimum and recommended
+
+- Software:
+    - [Docker](https://docs.docker.com/get-started/get-docker/)
+
+    Install Docker using official script
+    ```
+    sudo curl -fsSL https://get.docker.com | sh
+    ```
+
+> [!WARNING]
+> **The latest version of the bot is compatible only with RemnaWave panel version 2.3.\***  
+> Before installation, make sure your panel matches this version.
 
 
 ## Step 1 – Download required files

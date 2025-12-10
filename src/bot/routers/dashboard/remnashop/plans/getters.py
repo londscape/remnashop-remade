@@ -229,16 +229,16 @@ async def squads_getter(
         internal_dict.get(squad, str(squad)) for squad in plan.internal_squads
     )
 
-    # external_response = await remnawave.external_squads.get_external_squads()
-    # if not isinstance(external_response, GetExternalSquadsResponseDto):
-    #     raise ValueError("Wrong response from Remnawave external squads")
+    external_response = await remnawave.external_squads.get_external_squads()
+    if not isinstance(external_response, GetExternalSquadsResponseDto):
+        raise ValueError("Wrong response from Remnawave external squads")
 
-    # external_dict = {s.uuid: s.name for s in external_response.external_squads}
-    # external_squad_name = external_dict.get(plan.external_squad) if plan.external_squad else False
+    external_dict = {s.uuid: s.name for s in external_response.external_squads}
+    external_squad_name = external_dict.get(plan.external_squad) if plan.external_squad else False
 
     return {
         "internal_squads": internal_squads_names or False,
-        "external_squad": False,  # external_squad_name,
+        "external_squad": external_squad_name or False,
     }
 
 

@@ -597,25 +597,17 @@ async def on_allowed_user_input(
     if not plan:
         raise ValueError("PlanDto not found in dialog data")
 
-    allowed_user = await user_service.get(telegram_id=int(message.text))
+    allowed_user_id = int(message.text)
 
-    if not allowed_user:
-        logger.warning(f"{log(user)} No user found with Telegram ID '{message.text}'")
-        await notification_service.notify_user(
-            user=user,
-            payload=MessagePayload(i18n_key="ntf-plan-no-user-found"),
-        )
-        return  # NOTE: Allow adding non-existent users to the list?
-
-    if allowed_user.telegram_id in plan.allowed_user_ids:
-        logger.warning(f"{log(user)} User '{allowed_user.telegram_id}' is already allowed for plan")
+    if allowed_user_id in plan.allowed_user_ids:
+        logger.warning(f"{log(user)} User '{allowed_user_id}' is already allowed for plan")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-user-already-allowed"),
         )
         return
 
-    plan.allowed_user_ids.append(allowed_user.telegram_id)
+    plan.allowed_user_ids.append(allowed_user_id)
     adapter.save(plan)
 
 
