@@ -111,7 +111,7 @@ class PaymentGatewayService(BaseService):
                 #     is_active = False
                 #     settings = RobokassaGatewaySettingsDto()
                 case _:
-                    logger.warning(f"Unhandled payment gateway type '{gateway_type}' — skipping")
+                    logger.warning(f"Unhandled payment gateway type '{gateway_type}' - skipping")
                     continue
 
             order_index = await self.uow.repository.gateways.get_max_index()

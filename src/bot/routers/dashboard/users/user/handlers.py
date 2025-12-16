@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Union
+from typing import Optional, Union
 from uuid import UUID
 
 from aiogram.types import CallbackQuery, Message
@@ -11,6 +11,7 @@ from dishka.integrations.aiogram_dialog import inject
 from fluentogram import TranslatorRunner
 from loguru import logger
 from remnawave import RemnawaveSDK
+from remnawave.exceptions import NotFoundError
 from remnawave.models import TelegramUserResponseDto
 
 from src.bot.keyboards import get_contact_support_keyboard
@@ -24,7 +25,10 @@ from src.core.utils.time import datetime_now
 from src.core.utils.validators import is_double_click, parse_int
 from src.infrastructure.database.models.dto import UserDto
 from src.infrastructure.database.models.dto.plan import PlanSnapshotDto
-from src.infrastructure.database.models.dto.subscription import SubscriptionDto
+from src.infrastructure.database.models.dto.subscription import (
+    RemnaSubscriptionDto,
+    SubscriptionDto,
+)
 from src.infrastructure.taskiq.tasks.redirects import redirect_to_main_menu_task
 from src.services.notification import NotificationService
 from src.services.plan import PlanService
@@ -880,6 +884,98 @@ async def on_sync(
     widget: Button,
     dialog_manager: DialogManager,
     remnawave: FromDishka[RemnawaveSDK],
+    user_service: FromDishka[UserService],
+    subscription_service: FromDishka[SubscriptionService],
+    notification_service: FromDishka[NotificationService],
+) -> None:
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
+    target_user = await user_service.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        raise ValueError(f"User '{target_telegram_id}' not found")
+
+    bot_subscription = await subscription_service.get_current(target_telegram_id)
+    remna_subscription: Optional[RemnaSubscriptionDto] = None
+
+    try:
+        result = await remnawave.users.get_users_by_telegram_id(telegram_id=str(target_telegram_id))
+
+        if not isinstance(result, TelegramUserResponseDto):
+            raise ValueError("Unexpected response TelegramUserResponseDto")
+    except NotFoundError:
+        result = None
+
+    if not result and not bot_subscription:
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(i18n_key="ntf-user-sync-missing-data"),
+        )
+        return
+
+    if result:
+        remna_subscription = RemnaSubscriptionDto.from_remna_user(result[0].model_dump())
+
+    if SubscriptionService.subscriptions_match(bot_subscription, remna_subscription):
+        await notification_service.notify_user(
+            user=user,
+            payload=MessagePayload(i18n_key="ntf-user-sync-already"),
+        )
+        return
+
+    await dialog_manager.switch_to(state=DashboardUser.SYNC)
+
+
+@inject
+async def on_sync_from_remnawave(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager,
+    remnawave: FromDishka[RemnawaveSDK],
+    remnawave_service: FromDishka[RemnawaveService],
+    subscription_service: FromDishka[SubscriptionService],
+    user_service: FromDishka[UserService],
+    notification_service: FromDishka[NotificationService],
+) -> None:
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
+    target_user = await user_service.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        raise ValueError(f"User '{target_telegram_id}' not found")
+
+    subscription = await subscription_service.get_current(target_telegram_id)
+
+    try:
+        result = await remnawave.users.get_users_by_telegram_id(telegram_id=str(target_telegram_id))
+
+        if not isinstance(result, TelegramUserResponseDto):
+            raise ValueError("Unexpected response TelegramUserResponseDto")
+    except NotFoundError:
+        result = None
+
+    if not result:
+        if subscription:
+            subscription.status = SubscriptionStatus.DELETED
+            await subscription_service.update(subscription)
+
+        await user_service.delete_current_subscription(user.telegram_id)
+    else:
+        await remnawave_service.sync_user(result[0], creating=False)
+
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(i18n_key="ntf-user-sync-success"),
+    )
+    await dialog_manager.switch_to(state=DashboardUser.MAIN)
+
+
+@inject
+async def on_sync_from_remnashop(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager,
+    subscription_service: FromDishka[SubscriptionService],
     remnawave_service: FromDishka[RemnawaveService],
     user_service: FromDishka[UserService],
     notification_service: FromDishka[NotificationService],
@@ -891,32 +987,32 @@ async def on_sync(
     if not target_user:
         raise ValueError(f"User '{target_telegram_id}' not found")
 
-    try:
-        result = await remnawave.users.get_users_by_telegram_id(telegram_id=str(target_telegram_id))
+    subscription = await subscription_service.get_current(target_telegram_id)
 
-        if not isinstance(result, TelegramUserResponseDto):
-            raise ValueError("Unexpected response TelegramUserResponseDto")
-
-        if not result:
-            await notification_service.notify_user(
-                user=user,
-                payload=MessagePayload(i18n_key="ntf-user-sync-failed"),
+    if not subscription:
+        await remnawave_service.delete_user(target_user)
+    else:
+        remna_user = await remnawave_service.get_user(subscription.user_remna_id)
+        if remna_user:
+            await remnawave_service.updated_user(
+                user=target_user,
+                uuid=subscription.user_remna_id,
+                subscription=subscription,
             )
+
         else:
-            await remnawave_service.sync_user(result[0], creating=False)
-            await notification_service.notify_user(
-                user=user,
-                payload=MessagePayload(i18n_key="ntf-user-sync-success"),
+            created_user = await remnawave_service.create_user(
+                user=target_user,
+                subscription=subscription,
+                force=True,
             )
+            await remnawave_service.sync_user(created_user, creating=False)
 
-    except Exception as exception:
-        await notification_service.notify_user(
-            user=user,
-            payload=MessagePayload(i18n_key="ntf-user-sync-failed"),
-        )
-        logger.exception(
-            f"Error syncing RemnaUser '{target_user.telegram_id}' exception: {exception}"
-        )
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(i18n_key="ntf-user-sync-success"),
+    )
+    await dialog_manager.switch_to(state=DashboardUser.MAIN)
 
 
 @inject
@@ -975,6 +1071,10 @@ async def on_subscription_duration_select(
     logger.info(f"{log(user)} Selected duration '{selected_duration}'")
     target_telegram_id = dialog_manager.dialog_data["target_telegram_id"]
     target_user = await user_service.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        raise ValueError(f"User '{target_telegram_id}' not found")
+
     selected_plan_id = dialog_manager.dialog_data["selected_plan_id"]
     plan = await plan_service.get(selected_plan_id)
 
@@ -992,12 +1092,12 @@ async def on_subscription_duration_select(
             reset_traffic=True,
         )
     else:
-        remna_user = await remnawave_service.create_user(target_user, plan_snapshot)
+        remna_user = await remnawave_service.create_user(user=target_user, plan=plan_snapshot)
 
     subscription_url = remna_user.subscription_url
 
     if not subscription_url:
-        subscription_url = await remnawave_service.get_subscription_url(remna_user.uuid)
+        subscription_url = await remnawave_service.get_subscription_url(remna_user.uuid)  # type: ignore[assignment]
 
     new_subscription = SubscriptionDto(
         user_remna_id=remna_user.uuid,

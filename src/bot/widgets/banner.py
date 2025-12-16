@@ -22,30 +22,33 @@ def get_banner(
     locale: Locale,
     default_locale: Locale,
 ) -> tuple[Path, ContentType]:
-    for current_locale in [locale, default_locale]:
-        path_locale = banners_dir / current_locale
-
-        if not path_locale.exists():
-            continue
-
-        for format in BannerFormat:
-            path = path_locale / f"{name}.{format}"
-
-            if not path.exists():
+    def find_in_dirs(dirs: list[Path], filenames: list[str]) -> tuple[Path, ContentType] | None:
+        for directory in dirs:
+            if not directory.exists():
                 continue
+            for format in BannerFormat:
+                for pattern in filenames:
+                    filename = pattern.format(format=format)
+                    candidate = directory / filename
+                    if candidate.exists():
+                        return candidate, format.content_type
+        return None
 
-            content_type = format.content_type
-            logger.debug(f"Found banner '{name}' in locale '{current_locale}': '{path}'")
-            return path, content_type
+    locale_dirs = [banners_dir / locale, banners_dir / default_locale]
+
+    result = find_in_dirs(
+        locale_dirs, filenames=[f"{name}.{{format}}", f"{BannerName.DEFAULT}.{{format}}"]
+    )
+    if result:
+        return result
 
     logger.warning(f"Banner '{name}' not found in locales '{locale}' or '{default_locale}'")
-    path = banners_dir / f"{BannerName.DEFAULT}.{BannerFormat.JPG}"
-    content_type = BannerFormat.JPG.content_type
 
-    if not path.exists():
-        raise FileNotFoundError(f"Default banner not found: '{path}'")
+    result = find_in_dirs([banners_dir], [f"{BannerName.DEFAULT}.{{format}}"])
+    if result:
+        return result
 
-    return path, content_type
+    raise FileNotFoundError("Default banner not found in any locale or globally")
 
 
 class Banner(StaticMedia):

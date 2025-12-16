@@ -19,9 +19,8 @@ dependencies = [
     "msgspec~=0.19.0",
     "pydantic-settings~=2.11.0",
     "redis~=6.4.0",
-    "remnawave>=2.2.6",
-    #"remnawave @ file:///opt/python-sdk/remnawave",
-    #"remnawave @ git+https://github.com/remnawave/python-sdk.git@development",
+    "remnawave>=2.3.2",
+    #"remnapy>=2.3.1",
     "taskiq~=0.11.19",
     "taskiq-redis~=1.1.2",
     "uvicorn>=0.38.0",
@@ -84,7 +83,7 @@ extra_checks = true
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]
-module = ["fluentogram.*", "remnawave.*", "qrcode.*"]
+module = ["fluentogram.*", "remnawave.*", "qrcode.*", "remnapy.*"]
 follow_untyped_imports = true
 
 [[tool.mypy.overrides]]

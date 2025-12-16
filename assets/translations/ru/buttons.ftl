@@ -115,6 +115,8 @@ btn-user-subscription-delete = ❌ Удалить
 btn-user-message-preview = 👀 Предпросмотр
 btn-user-message-confirm = ✅ Отправить
 btn-user-sync = 🌀 Синхронизировать
+btn-user-sync-remnawave = 🌊 Использовать данные Remnawave
+btn-user-sync-remnashop = 🛍 Использовать данные Remnashop
 btn-user-give-subscription = 🎁 Выдать подписку
 btn-user-subscription-internal-squads = ⏺️ Внутренние сквады
 btn-user-subscription-external-squads = ⏹️ Внешний сквад
@@ -179,6 +181,7 @@ btn-broadcast =  { $status ->
 # Go to
 btn-goto-subscription = 💳 Купить подписку
 btn-goto-promocode = 🎟 Активировать промокод
+btn-goto-invite = 👥 Пригласить
 btn-goto-subscription-renew = 🔄 Продлить подписку
 btn-goto-user-profile = 👤 Перейти к пользователю
 

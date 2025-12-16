@@ -16,20 +16,6 @@ from src.core.utils.formatters import format_username_to_url
 CALLBACK_CHANNEL_CONFIRM: Final[str] = "channel_confirm"
 CALLBACK_RULES_ACCEPT: Final[str] = "rules_accept"
 
-goto_buttons = [
-    InlineKeyboardButton(
-        text="btn-contact-support",
-    ),
-    InlineKeyboardButton(
-        text="btn-goto-subscription",
-        callback_data=f"{GOTO_PREFIX}{Subscription.MAIN.state}",
-    ),
-    InlineKeyboardButton(
-        text="btn-goto-promocode",
-        callback_data=f"{GOTO_PREFIX}{Subscription.PROMOCODE.state}",
-    ),
-]
-
 connect_buttons = (
     WebApp(
         text=I18nFormat("btn-menu-connect"),
@@ -66,12 +52,49 @@ main_menu_button = (
 )
 
 
+def get_goto_buttons(is_referral_enable: bool) -> list[InlineKeyboardButton]:
+    buttons = [
+        InlineKeyboardButton(
+            text="btn-contact-support",
+        ),
+        InlineKeyboardButton(
+            text="btn-goto-subscription",
+            callback_data=f"{GOTO_PREFIX}{Subscription.MAIN.state}",
+        ),
+        InlineKeyboardButton(
+            text="btn-goto-promocode",
+            callback_data=f"{GOTO_PREFIX}{Subscription.PROMOCODE.state}",
+        ),
+    ]
+
+    if is_referral_enable:
+        buttons.append(
+            InlineKeyboardButton(
+                text="btn-goto-invite",
+                callback_data=f"{GOTO_PREFIX}{MainMenu.INVITE.state}",
+            )
+        )
+
+    return buttons
+
+
 def get_renew_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
             text="btn-goto-subscription-renew",
             callback_data=f"{GOTO_PREFIX}{PURCHASE_PREFIX}{PurchaseType.RENEW}",
+        ),
+    )
+    return builder.as_markup()
+
+
+def get_buy_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text="btn-goto-subscription",
+            callback_data=f"{GOTO_PREFIX}{PURCHASE_PREFIX}{PurchaseType.NEW}",
         ),
     )
     return builder.as_markup()

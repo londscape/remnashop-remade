@@ -210,7 +210,7 @@ def i18n_format_expire_time(expiry: Union[timedelta, datetime]) -> list[tuple[st
 
     if delta.total_seconds() <= 0:
         # Already expired or zero, default to 1 minute
-        return [(TimeUnitKey.MINUTE, {"value": 1})]
+        return [("unknown", {"value": 0})]
 
     days = delta.days
     seconds = delta.seconds
@@ -236,7 +236,7 @@ def i18n_format_expire_time(expiry: Union[timedelta, datetime]) -> list[tuple[st
         parts.append((TimeUnitKey.MINUTE, {"value": minutes}))
 
     # Default to 1 minute if everything is zero
-    return parts or [(TimeUnitKey.MINUTE, {"value": 1})]
+    return parts or [("unknown", {"value": 0})]
 
 
 def i18n_postprocess_text(text: str, collapse_level: int = 2) -> str:

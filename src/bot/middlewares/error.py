@@ -9,6 +9,7 @@ from dishka import AsyncContainer
 from src.bot.keyboards import get_user_keyboard
 from src.core.constants import CONTAINER_KEY
 from src.core.enums import MiddlewareEventType
+from src.core.exceptions import MenuRenderingError
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import UserDto
 from src.infrastructure.taskiq.tasks.notifications import send_error_notification_task
@@ -42,9 +43,10 @@ class ErrorMiddleware(EventTypedMiddleware):
 
         user_id = user_data.get("user_id")
         error_event = cast(ErrorEvent, event)
+        error = error_event.exception
         traceback_str = traceback.format_exc()
-        error_type_name = type(error_event.exception).__name__
-        error_message = Text(str(error_event.exception)[:512])
+        error_type_name = type(error).__name__
+        error_message = Text(str(error)[:512])
 
         if aiogram_user:
             reply_markup = get_user_keyboard(aiogram_user.id)
@@ -52,7 +54,7 @@ class ErrorMiddleware(EventTypedMiddleware):
             user_service: UserService = await container.get(UserService)
             user: Optional[UserDto] = await user_service.get(telegram_id=aiogram_user.id)
 
-            if user:
+            if user and not user.is_dev and not isinstance(error, MenuRenderingError):
                 await redirect_to_main_menu_task.kiq(aiogram_user.id)
 
         else:
@@ -70,5 +72,3 @@ class ErrorMiddleware(EventTypedMiddleware):
                 reply_markup=reply_markup,
             ),
         )
-
-        # return await handler(event, data)

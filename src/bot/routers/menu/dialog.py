@@ -140,7 +140,7 @@ devices = Window(
 )
 
 invite = Window(
-    Banner(BannerName.MENU),
+    Banner(BannerName.REFERRAL),
     I18nFormat("msg-menu-invite"),
     Row(
         SwitchTo(

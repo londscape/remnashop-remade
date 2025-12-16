@@ -56,7 +56,7 @@ class PlanSnapshotDto(TrackableDto):
         return cls(
             id=-1,
             name="test",
-            tag="",
+            tag=None,
             type=PlanType.UNLIMITED,
             traffic_limit=-1,
             device_limit=-1,

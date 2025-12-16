@@ -14,7 +14,7 @@ from dishka.integrations.aiogram_dialog import inject
 from fluentogram import TranslatorRunner
 from loguru import logger
 
-from src.bot.keyboards import goto_buttons
+from src.bot.keyboards import get_goto_buttons
 from src.bot.states import DashboardBroadcast
 from src.core.config import AppConfig
 from src.core.constants import USER_KEY
@@ -28,6 +28,7 @@ from src.infrastructure.taskiq.tasks.broadcast import delete_broadcast_task, sen
 from src.services.broadcast import BroadcastService
 from src.services.notification import NotificationService
 from src.services.plan import PlanService
+from src.services.settings import SettingsService
 
 
 def _update_payload(dialog_manager: DialogManager, **updates: Any) -> MessagePayload:
@@ -211,6 +212,7 @@ async def on_button_select(
     sub_manager: SubManager,
     config: FromDishka[AppConfig],
     i18n: FromDishka[TranslatorRunner],
+    settings_service: FromDishka[SettingsService],
 ) -> None:
     await sub_manager.load_data()
     user: UserDto = sub_manager.middleware_data[USER_KEY]
@@ -222,7 +224,10 @@ async def on_button_select(
             button["selected"] = not button.get("selected", False)
             break
 
+    is_referral_enable = await settings_service.is_referral_enable()
+    goto_buttons = get_goto_buttons(is_referral_enable)
     builder = InlineKeyboardBuilder()
+
     for button in buttons:
         if button.get("selected"):
             if button["id"] == 0:

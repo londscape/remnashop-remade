@@ -4,12 +4,13 @@ from aiogram_dialog import DialogManager
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
-from src.bot.keyboards import goto_buttons
+from src.bot.keyboards import get_goto_buttons
 from src.core.constants import DATETIME_FORMAT
 from src.core.enums import PlanAvailability
 from src.infrastructure.database.models.dto import PlanDto
 from src.services.broadcast import BroadcastService
 from src.services.plan import PlanService
+from src.services.settings import SettingsService
 
 
 @inject
@@ -47,11 +48,14 @@ async def send_getter(
     }
 
 
+@inject
 async def buttons_getter(
     dialog_manager: DialogManager,
+    settings_service: FromDishka[SettingsService],
     **kwargs: Any,
 ) -> dict[str, Any]:
     buttons = dialog_manager.dialog_data.get("buttons", [])
+    is_referral_enable = await settings_service.is_referral_enable()
 
     if not buttons:
         buttons = [
@@ -60,7 +64,7 @@ async def buttons_getter(
                 "text": goto_button.text,
                 "selected": False,
             }
-            for index, goto_button in enumerate(goto_buttons)
+            for index, goto_button in enumerate(get_goto_buttons(is_referral_enable))
         ]
         dialog_manager.dialog_data["buttons"] = buttons
 

@@ -15,8 +15,6 @@ from src.infrastructure.redis import RedisRepository
 from .base import BaseService
 
 
-# TODO: Implement logic for plan availability for specific gateways
-# TODO: Implement general discount for plan
 class PlanService(BaseService):
     uow: UnitOfWork
 

@@ -251,7 +251,7 @@ def get_subscriptions_statistics(
             if s.device_limit != -1:
                 total_devices += 1
 
-        elif s.status == SubscriptionStatus.EXPIRED:
+        elif s.get_status == SubscriptionStatus.EXPIRED:
             total_expire_subscriptions += 1
 
     return {

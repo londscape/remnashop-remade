@@ -1,3 +1,6 @@
+from datetime import timedelta
+from uuid import UUID
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
@@ -9,11 +12,16 @@ from dishka.integrations.aiogram_dialog import inject
 from fluentogram import TranslatorRunner
 from loguru import logger
 from remnawave import RemnawaveSDK
+from remnawave.models import CreateUserRequestDto
 
 from src.bot.filters import SuperDevFilter
 from src.core.config.app import AppConfig
 from src.core.utils.formatters import format_user_log as log
-from src.infrastructure.database.models.dto import UserDto
+from src.core.utils.time import datetime_now
+from src.infrastructure.database.models.dto import SubscriptionDto, UserDto
+from src.infrastructure.database.models.dto.plan import PlanSnapshotDto
+from src.services.remnawave import RemnawaveService
+from src.services.subscription import SubscriptionService
 
 router = Router(name=__name__)
 
@@ -21,20 +29,37 @@ router = Router(name=__name__)
 @inject
 @router.message(Command("test"), SuperDevFilter())
 async def on_test_command(
-    message: Message, user: UserDto, config: AppConfig, remnawave: FromDishka[RemnawaveSDK]
+    message: Message,
+    user: UserDto,
+    config: AppConfig,
+    remnawave: FromDishka[RemnawaveSDK],
+    remnawave_service: FromDishka[RemnawaveService],
+    subscription_service: FromDishka[SubscriptionService],
 ) -> None:
     logger.info(f"{log(user)} Test command executed")
 
-    # remna_user = await remnawave.users.get_user_by_uuid(
-    #     UUID("c5f0afd5-e682-41f6-82d9-ade08feba776")
+    #
+
+    # created_user = CreateUserRequestDto(
+    #     expire_at=datetime_now() - timedelta(days=2), username=user.remna_name, tag="IMPORTED"
     # )
-    # remna_user = await remnawave.users.get_users_by_telegram_id(str(user.telegram_id))
-    # logger.critical(remna_user)
-    # logger.critical(user.transactions)
-    # logger.critical(user.subscriptions)
-    # logger.critical(user.promocode_activations)
-    # raise UnknownState("test_state")
-    # raise UnknownIntent("test_intent")
+    # await remnawave.users.create_user(created_user)
+
+    #
+
+    # test = SubscriptionDto(
+    #     id=-1,
+    #     user_remna_id=UUID(),
+    #     traffic_limit=1,
+    #     device_limit=2,
+    #     internal_squads=[],
+    #     external_squad=None,
+    #     expire_at=datetime_now() - timedelta(days=2),
+    #     url="",
+    #     plan=PlanSnapshotDto.test(),
+    # )
+    # await subscription_service.create(user, test)
+    # await remnawave_service.create_user(user, subscription=test)
 
 
 @inject

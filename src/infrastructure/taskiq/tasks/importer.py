@@ -4,7 +4,7 @@ from dishka.integrations.taskiq import FromDishka, inject
 from loguru import logger
 from remnawave import RemnawaveSDK
 from remnawave.exceptions import BadRequestError
-from remnawave.models import CreateUserRequestDto, UserResponseDto, UsersResponseDto
+from remnawave.models import CreateUserRequestDto, GetAllUsersResponseDto, UserResponseDto
 
 from src.infrastructure.taskiq.broker import broker
 from src.services.remnawave import RemnawaveService
@@ -55,9 +55,9 @@ async def sync_all_users_from_panel_task(
     start = 0
     size = 50
 
-    while True:
-        response = await remnawave.users.get_all_users_v2(start=start, size=size)
-        if not isinstance(response, UsersResponseDto) or not response.users:
+    while True:  # TODO: Get users count for cicle
+        response = await remnawave.users.get_all_users(start=start, size=size)
+        if not isinstance(response, GetAllUsersResponseDto) or not response.users:
             break
 
         all_remna_users.extend(response.users)

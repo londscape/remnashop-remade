@@ -1,20 +1,24 @@
 from datetime import timedelta
-from typing import Optional, cast
+from typing import Optional, Union, cast
 from uuid import UUID
 
 from aiogram import Bot
 from fluentogram import TranslatorHub
+from httpx import Response
 from loguru import logger
 from redis.asyncio import Redis
 from remnawave import RemnawaveSDK
+from remnawave.exceptions import ConflictError, NotFoundError
 from remnawave.models import (
     CreateUserRequestDto,
+    CreateUserResponseDto,
     DeleteUserHwidDeviceResponseDto,
     DeleteUserResponseDto,
     GetStatsResponseDto,
     GetUserHwidDevicesResponseDto,
     HWIDDeleteRequest,
     HwidUserDeviceDto,
+    TelegramUserResponseDto,
     UpdateUserRequestDto,
     UserResponseDto,
 )
@@ -98,29 +102,77 @@ class RemnawaveService(BaseService):
     async def create_user(
         self,
         user: UserDto,
-        plan: PlanSnapshotDto,
+        plan: Optional[PlanSnapshotDto] = None,
+        subscription: Optional[SubscriptionDto] = None,
+        force: bool = False,
     ) -> UserResponseDto:
-        logger.info(f"Creating RemnaUser '{user.telegram_id}' for plan '{plan.name}'")
-        created_user = await self.remnawave.users.create_user(
-            CreateUserRequestDto(
-                expire_at=format_days_to_datetime(plan.duration),
-                username=user.remna_name,
-                traffic_limit_bytes=format_gb_to_bytes(plan.traffic_limit),
-                traffic_limit_strategy=plan.traffic_limit_strategy,
-                description=user.remna_description,
-                tag=plan.tag,
-                telegram_id=user.telegram_id,
-                hwid_device_limit=format_device_count(plan.device_limit),
-                active_internal_squads=plan.internal_squads,
-                external_squad_uuid=plan.external_squad,
-            )
-        )
+        async def _do_create() -> Union[CreateUserResponseDto, str, bytes, Response]:
+            if subscription:
+                logger.info(
+                    f"Creating RemnaUser '{user.remna_name}' "
+                    f"from subscription '{subscription.plan.name}'"
+                )
+                return await self.remnawave.users.create_user(
+                    CreateUserRequestDto(
+                        uuid=subscription.user_remna_id,
+                        expire_at=subscription.expire_at,
+                        username=user.remna_name,
+                        traffic_limit_bytes=format_gb_to_bytes(subscription.traffic_limit),
+                        traffic_limit_strategy=subscription.plan.traffic_limit_strategy,
+                        description=user.remna_description,
+                        tag=subscription.plan.tag,
+                        telegram_id=user.telegram_id,
+                        hwid_device_limit=format_device_count(subscription.device_limit),
+                        active_internal_squads=subscription.internal_squads,
+                        external_squad_uuid=subscription.external_squad,
+                    )
+                )
 
-        if not isinstance(created_user, UserResponseDto):
+            if plan:
+                logger.info(f"Creating RemnaUser '{user.telegram_id}' from plan '{plan.name}'")
+                return await self.remnawave.users.create_user(
+                    CreateUserRequestDto(
+                        expire_at=format_days_to_datetime(plan.duration),
+                        username=user.remna_name,
+                        traffic_limit_bytes=format_gb_to_bytes(plan.traffic_limit),
+                        traffic_limit_strategy=plan.traffic_limit_strategy,
+                        description=user.remna_description,
+                        tag=plan.tag,
+                        telegram_id=user.telegram_id,
+                        hwid_device_limit=format_device_count(plan.device_limit),
+                        active_internal_squads=plan.internal_squads,
+                        external_squad_uuid=plan.external_squad,
+                    )
+                )
+
+            raise ValueError("Either 'plan' or 'subscription' must be provided")
+
+        try:
+            created = await _do_create()
+
+        except ConflictError:
+            if not force:
+                raise
+
+            logger.warning(
+                f"User '{user.remna_name}' already exists. Force flag enabled, "
+                f"removing and recreating"
+            )
+
+            old_remna_user = await self.remnawave.users.get_user_by_username(user.remna_name)
+
+            if not isinstance(old_remna_user, UserResponseDto):
+                logger.warning(f"RemnaUser '{user.remna_name}' not found")
+                raise ValueError("Failed to get RemnaUser: unexpected response")
+
+            await self.remnawave.users.delete_user(uuid=str(old_remna_user.uuid))
+            created = await _do_create()
+
+        if not isinstance(created, UserResponseDto):
             raise ValueError("Failed to create RemnaUser: unexpected response")
 
-        logger.info(f"RemnaUser '{created_user.telegram_id}' created successfully")
-        return created_user
+        logger.info(f"RemnaUser '{created.username}' created successfully")
+        return created
 
     async def updated_user(
         self,
@@ -191,11 +243,19 @@ class RemnawaveService(BaseService):
 
         if not user.current_subscription:
             logger.warning(f"No current subscription for user '{user.telegram_id}'")
-            return False
 
-        result = await self.remnawave.users.delete_user(
-            uuid=str(user.current_subscription.user_remna_id),
-        )
+            users_result = await self.remnawave.users.get_users_by_telegram_id(
+                telegram_id=str(user.telegram_id)
+            )
+
+            if not isinstance(users_result, TelegramUserResponseDto) or not users_result:
+                return False
+
+            uuid = users_result[0].uuid
+        else:
+            uuid = user.current_subscription.user_remna_id
+
+        result = await self.remnawave.users.delete_user(uuid=str(uuid))
 
         if not isinstance(result, DeleteUserResponseDto):
             raise ValueError("Failed to delete RemnaUser: unexpected response")
@@ -250,7 +310,10 @@ class RemnawaveService(BaseService):
 
     async def get_user(self, uuid: UUID) -> Optional[UserResponseDto]:
         logger.info(f"Fetching RemnaUser '{uuid}'")
-        remna_user = await self.remnawave.users.get_user_by_uuid(str(uuid))
+        try:
+            remna_user = await self.remnawave.users.get_user_by_uuid(str(uuid))
+        except NotFoundError:
+            return None
 
         if not isinstance(remna_user, UserResponseDto):
             logger.warning(f"RemnaUser '{uuid}' not found")
@@ -325,7 +388,10 @@ class RemnawaveService(BaseService):
 
         else:
             logger.info(f"Synchronizing subscription for '{user.telegram_id}'")
-            subscription = subscription.apply_sync(remna_subscription)
+            subscription = SubscriptionService.apply_sync(
+                target=subscription,
+                source=remna_subscription,
+            )
             await self.subscription_service.update(subscription)
             logger.info(f"Subscription updated for '{user.telegram_id}'")
 
@@ -374,7 +440,7 @@ class RemnawaveService(BaseService):
             ),
             "traffic_limit": (
                 i18n_format_bytes_to_unit(remna_user.traffic_limit_bytes)
-                if remna_user.traffic_limit_bytes > 0  # type: ignore[operator]
+                if remna_user.traffic_limit_bytes > 0
                 else i18n_format_traffic_limit(-1)
             ),
             "device_limit": (
@@ -382,7 +448,7 @@ class RemnawaveService(BaseService):
                 if remna_user.hwid_device_limit
                 else i18n_format_device_limit(-1)
             ),
-            "expire_time": i18n_format_expire_time(remna_user.expire_at),  # type: ignore[arg-type]
+            "expire_time": i18n_format_expire_time(remna_user.expire_at),
         }
 
         if event == RemnaUserEvent.MODIFIED:
@@ -391,13 +457,7 @@ class RemnawaveService(BaseService):
 
         elif event == RemnaUserEvent.DELETED:
             logger.debug(f"RemnaUser '{remna_user.telegram_id}' deleted")
-            await delete_current_subscription_task.kiq(user_telegram_id=remna_user.telegram_id)
-
-        elif remna_user.expire_at + timedelta(days=2) < datetime_now():  # type: ignore[operator]
-            logger.debug(
-                f"Subscription for RemnaUser '{user.telegram_id}' expired more than 2 days ago, "
-                "skipping — most likely an imported user"
-            )
+            await delete_current_subscription_task.kiq(remna_user)
 
         elif event in {
             RemnaUserEvent.REVOKED,
@@ -411,7 +471,7 @@ class RemnawaveService(BaseService):
             )
             await update_status_current_subscription_task.kiq(
                 user_telegram_id=remna_user.telegram_id,
-                status=SubscriptionStatus(remna_user.status),  # type: ignore[arg-type]
+                status=SubscriptionStatus(remna_user.status),
             )
             if event == RemnaUserEvent.LIMITED:
                 await send_subscription_limited_notification_task.kiq(
@@ -419,6 +479,13 @@ class RemnawaveService(BaseService):
                     i18n_kwargs=i18n_kwargs,
                 )
             elif event == RemnaUserEvent.EXPIRED:
+                if remna_user.expire_at + timedelta(days=3) < datetime_now():
+                    logger.debug(
+                        f"Subscription for RemnaUser '{user.telegram_id}' expired more than "
+                        "3 days ago, skipping - most likely an imported user"
+                    )
+                    return
+
                 await send_subscription_expire_notification_task.kiq(
                     remna_user=remna_user,
                     ntf_type=UserNotificationType.EXPIRED,
